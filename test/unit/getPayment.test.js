@@ -60,7 +60,13 @@ describe('getPayment', function () {
       }
     ],
     state: "PENDING",
-    compound_state: "PENDING.AWAIT_SECRET"
+    compound_state: "PENDING.AWAIT_SECRET",
+    card_reference: {
+      card_brand: "MASTERCARD",
+      card_token: "cardToken",
+      masked_pan: "123456...9876",
+      expiry_date: "0721"
+    }
   };
 
   beforeEach(function (done) {
@@ -98,6 +104,14 @@ describe('getPayment', function () {
 
         /* Briefly check payment object. See test for _convertPaymentObject() for full coverage */
         payment.id.should.equal(successResponse.id);
+        payment.should.have.property('card');
+        payment.card.should.deep.equal({
+          brand: "MASTERCARD",
+          token: "cardToken",
+          bin: "123456",
+          last4: "9876",
+          expiryDate: "0721"
+        })
 
         done();
       });

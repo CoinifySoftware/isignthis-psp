@@ -314,6 +314,12 @@ ISignThis.prototype._convertPaymentObject = function (obj) {
    *     "transaction_id": "28",
    *     "reference": " "
    *   },
+   *   card_reference: {
+   *     card_brand: "MASTERCARD",
+   *     card_token: "cardToken",
+   *     masked_pan: "111111...1111",
+   *     expiry_date: "0721"
+   *   },
    *   "expires_at": "2016-03-21T14:10:33.596Z",
    *   "state": "PENDING",
    *   "compound_state": "PENDING.VALIDATED_TRANSACTION",
@@ -351,6 +357,18 @@ ISignThis.prototype._convertPaymentObject = function (obj) {
     kycReviewIncluded = true;
   }
 
+  let card = {};
+
+  if (obj.card_reference) {
+    card.token = obj.card_reference.card_token;
+    card.brand = obj.card_reference.card_brand;
+    card.expiryDate = obj.card_reference.expiry_date;
+
+    const cardNumber = obj.card_reference.masked_pan;
+    card.bin = cardNumber.substring(0, 6);
+    card.last4 = cardNumber.substring(cardNumber.length-4);
+  }
+
   return {
     id: obj.id,
     acquirerId: obj.transactions && obj.transactions[0] && obj.transactions[0].acquirer_id,
@@ -359,6 +377,7 @@ ISignThis.prototype._convertPaymentObject = function (obj) {
     redirectUrl: obj.redirect_url,
     transactions: obj.transactions ? obj.transactions.map(convertTransaction) : undefined,
     kycReviewIncluded,
+    card,
     raw: obj
   };
 };
@@ -474,6 +493,13 @@ ISignThis.prototype.createPayment = function iSignThisCreatePayment(options, cal
     "downstream_auth_value": this.config.callbackAuthToken,
     "requested_workflow": "SCA"
   };
+
+  /* card object is optional, only pass it to IST if defined */
+  if (options.card && options.card.token) {
+    // documentation about the format IST expects the card token to be in is here
+    // https://coinify.atlassian.net/browse/DEV-3464
+    data.cardholder = {card_token: options.card.token}
+  }
 
   /* Perform request */
   this._post(AUTHORIZATION_PATH, data, this._createPaymentRequestCallback(callback));

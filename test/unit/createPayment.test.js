@@ -152,6 +152,7 @@ describe('createPayment', function () {
 
     it('correctly sends request and parses response', function (done) {
       var returnUrl = 'https://coinify.com/payment-return';
+      var token =  'theBestTokenInZUniverse';
 
       var createPaymentOptions = {
         acquirerId: 'another_acquirer',
@@ -174,6 +175,9 @@ describe('createPayment', function () {
         transaction: {
           id: 'tx-id',
           reference: 'tx-reference'
+        },
+        card: {
+          token
         }
       };
 
@@ -205,7 +209,10 @@ describe('createPayment', function () {
           secret: createPaymentOptions.account.secret,
           full_name: createPaymentOptions.account.name
         },
-        requested_workflow: "SCA"
+        requested_workflow: "SCA",
+        cardholder: {
+          card_token: token
+        }
       };
 
       iSignThis.createPayment(createPaymentOptions, function (err, payment) {

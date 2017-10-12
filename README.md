@@ -61,6 +61,13 @@ Field         | Type      | Description
 &rarr;`identity.id` | String  | Identity ID
 &rarr;`identity.url` | String  | URL to get provider specific identity information
 `raw`         | Object    | The payment object from the PSP. The contents of this object will differ between different PSPs, and should be treated as an opaque blob.
+`card`          | Object  | Information about the card
+&rarr;`token`   | String  | The credit card token to use for a preauthorized card payment
+&rarr;`last4`   | String  | The last four digits of the credit card number
+&rarr;`bin`     | String  | The credit card bin
+&rarr;`brand`   | String  | The credit card brand
+&rarr;`expiryDate`   | String  | The credit card expiry date (e.g. `1217` for Dec, 2017)
+
 
 ### `createPayment`: Create payment
 <a name="module–payment-create"></a>
@@ -92,6 +99,9 @@ Argument      | Type   | Default    | Description
 `transaction`   | Object  | `{}`       | Information about the transaction(s) related to the payment
 &rarr;`id`      | String  | `null`     | ???
 &rarr;`reference` | String  | `null`   | Internal reference for the transaction(s)
+`card`          | Object  | _(Optional) | Information about the card
+&rarr;`token`   | String  | `null`   | The credit card token to use for a preauthorized card payment
+
 
 #### Callback result
 
