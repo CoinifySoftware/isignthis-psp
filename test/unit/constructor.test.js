@@ -1,43 +1,46 @@
 'use strict';
-const sinon = require('sinon'),
-  expect = require('chai').expect,
-  should = require('chai').should();
 
-var ISignThis = require('../../index.js');
+const expect = require('chai').expect;
 
-describe('Constructor', function() {
+const ISignThis = require('../../index.js');
 
-  it('should throw an error on missing client certificate and merchant name', function (done) {
-    let fn = () =>{ new ISignThis({
+describe('Constructor', () => {
+  it('should throw an error on missing client certificate and merchant name', (done) => {
+    let fn = () => {
+      const iSignThis = new ISignThis({
       // Missing merchant id
-      apiClient: 'api_client',
-      authToken: 'auth_token'
-    })};
+        apiClient: 'api_client',
+        authToken: 'auth_token'
+      });
+    };
 
     expect(fn).to.throw(Error, 'Missing configuration options');
 
-    fn = () =>{ new ISignThis({
+    fn = () => {
+      const iSignThis = new ISignThis({
       // Missing client certificate
-      apiClient: 'api_client',
-      merchantId: 'merchant_id'
-    })};
+        apiClient: 'api_client',
+        merchantId: 'merchant_id'
+      });
+    };
 
     expect(fn).to.throw(Error, 'Missing configuration options');
 
-    fn = () =>{ new ISignThis({
+    fn = () => {
+      const iSignThis = new ISignThis({
       // Missing client key
-      authToken: 'auth_token',
-      merchantId: 'merchant_id'
-    })};
+        authToken: 'auth_token',
+        merchantId: 'merchant_id'
+      });
+    };
 
     expect(fn).to.throw(Error, 'Missing configuration options');
 
     done();
   });
 
-  it('should revert to default options for not supplied fields', function(done) {
-
-    var obj = new ISignThis({
+  it('should revert to default options for not supplied fields', (done) => {
+    const obj = new ISignThis({
       merchantId: 'merchant_id',
       apiClient: 'account.isignthis.com',
       authToken: 'auth_token',
@@ -56,10 +59,9 @@ describe('Constructor', function() {
     done();
   });
 
-  it('should allow overriding default fields', function(done) {
-
-    var logMock = {debug: function(message) {}};
-    var obj = new ISignThis({
+  it('should allow overriding default fields', (done) => {
+    const logMock = {debug (message) {}};
+    const obj = new ISignThis({
       merchantId: 'merchant_id',
       merchantName: 'The Merchant',
       apiClient: 'account.isignthis.com',
@@ -78,5 +80,4 @@ describe('Constructor', function() {
 
     done();
   });
-
 });

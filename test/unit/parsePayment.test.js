@@ -1,86 +1,78 @@
 'use strict';
-/**
- * Created by mbn on 02/05/16.
- */
-const request = require('request')
-  , _ = require('lodash')
 
-  , sinon = require('sinon')
-  , chai = require('chai')
-  , expect = require('chai').expect
-  , chaiSubset = require('chai-subset');
+const _ = require('lodash'),
+  chai = require('chai'),
+  expect = require('chai').expect,
+  chaiSubset = require('chai-subset');
 
 chai.use(chaiSubset);
 
 const ISignThis = require('../../index.js');
 
-const clientCertificate = '1234'
-  , clientKey = '2345'
-  , acquirerId = 'clearhaus'
-  , merchantId = 'merchant_id'
-  , apiClient = 'api_client'
-  , callbackAuthToken = 'callbck_auth_token'
-  , authToken = 'auth_token';
-
+const clientCertificate = '1234',
+  clientKey = '2345',
+  acquirerId = 'clearhaus',
+  merchantId = 'merchant_id',
+  apiClient = 'api_client',
+  callbackAuthToken = 'callbck_auth_token',
+  authToken = 'auth_token';
 
 describe('parsePayment', () => {
-
   let iSignThis;
   let requestBody;
 
   before(() => {
     iSignThis = new ISignThis({
-      clientCertificate: clientCertificate,
-      clientKey: clientKey,
-      acquirerId: acquirerId,
-      merchantId: merchantId,
-      apiClient: apiClient,
+      clientCertificate,
+      clientKey,
+      acquirerId,
+      merchantId,
+      apiClient,
       callbackAuthToken,
-      authToken: authToken
+      authToken
     });
   });
 
   beforeEach(() => {
     requestBody = {
-      id: "c97f0bfc-c1ac-46c3-96d8-6605a63d380d",
-      uid: "c97f0bfc-c1ac-46c3-96d8-6605a63d380d",
-      secret: "f8fd310d-3755-4e63-ae98-ab3629ef245d",
-      mode: "registration",
+      id: 'c97f0bfc-c1ac-46c3-96d8-6605a63d380d',
+      uid: 'c97f0bfc-c1ac-46c3-96d8-6605a63d380d',
+      secret: 'f8fd310d-3755-4e63-ae98-ab3629ef245d',
+      mode: 'registration',
       original_message: {
         merchant_id: merchantId,
         transaction_id: 'Test',
         reference: 'Coinify Card Verification'
       },
-      expires_at: "2016-03-06T13:36:59.196Z",
+      expires_at: '2016-03-06T13:36:59.196Z',
       transactions: [
         {
           acquirer_id: acquirerId,
-          bank_id: "2774d451-5499-41a6-a37e-6a90f2b8673c",
-          response_code: "20000",
+          bank_id: '2774d451-5499-41a6-a37e-6a90f2b8673c',
+          response_code: '20000',
           success: true,
-          amount: "0.70",
-          currency: "DKK",
-          message_class: "authorization-and-capture",
-          status_code: "20000"
+          amount: '0.70',
+          currency: 'DKK',
+          message_class: 'authorization-and-capture',
+          status_code: '20000'
         },
         {
           acquirer_id: acquirerId,
-          bank_id: "73f63c0b-7c59-416f-89e5-17dcc38b64ac",
-          response_code: "20000",
+          bank_id: '73f63c0b-7c59-416f-89e5-17dcc38b64ac',
+          response_code: '20000',
           success: true,
-          amount: "0.30",
-          currency: "DKK",
-          message_class: "authorization-and-capture",
-          status_code: "20000"
+          amount: '0.30',
+          currency: 'DKK',
+          message_class: 'authorization-and-capture',
+          status_code: '20000'
         }
       ],
-      state: "PENDING",
-      compound_state: "PENDING.AWAIT_SECRET"
-    }
+      state: 'PENDING',
+      compound_state: 'PENDING.AWAIT_SECRET'
+    };
   });
 
   it('should parse payment and return payment object ', () => {
-
     const payment = iSignThis.parsePayment(requestBody);
 
     /* Briefly check payment object. See test for _convertPaymentObject() for full coverage */
@@ -91,11 +83,11 @@ describe('parsePayment', () => {
   it('should return kycReviewIncluded true if workflow_state is not NA', () => {
     requestBody = _.defaultsDeep({
       workflow_state: {
-        sca: "ACCEPTED", // Possible values: NA / PENDING / ACCEPTED / FAILED / EXPIRED
-        charge: "ACCEPTED",
-        kyc: "ACCEPTED",
-        capture: "ACCEPTED",
-        piv: "ACCEPTED"
+        sca: 'ACCEPTED', // Possible values: NA / PENDING / ACCEPTED / FAILED / EXPIRED
+        charge: 'ACCEPTED',
+        kyc: 'ACCEPTED',
+        capture: 'ACCEPTED',
+        piv: 'ACCEPTED'
       }
     }, requestBody);
 
@@ -107,11 +99,11 @@ describe('parsePayment', () => {
   it('should return kycReviewIncluded false if workflow_state is NA', () => {
     requestBody = _.defaultsDeep({
       workflow_state: {
-        sca: "ACCEPTED", // Possible values: NA / PENDING / ACCEPTED / FAILED / EXPIRED
-        charge: "ACCEPTED",
-        kyc: "NA",
-        capture: "ACCEPTED",
-        piv: "ACCEPTED"
+        sca: 'ACCEPTED', // Possible values: NA / PENDING / ACCEPTED / FAILED / EXPIRED
+        charge: 'ACCEPTED',
+        kyc: 'NA',
+        capture: 'ACCEPTED',
+        piv: 'ACCEPTED'
       }
     }, requestBody);
 
@@ -209,5 +201,4 @@ describe('parsePayment', () => {
 
     expect(payment.state).to.equal('reviewing');
   });
-
 });

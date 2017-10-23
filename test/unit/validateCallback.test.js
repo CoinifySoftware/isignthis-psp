@@ -1,63 +1,58 @@
-/**
- * Created by mbn on 02/05/16.
- */
-var
-  request = require('request'),
-  sinon = require('sinon'),
+'use strict';
+
+const
   chai = require('chai'),
   chaiSubset = require('chai-subset');
 
 chai.use(chaiSubset);
-var should = chai.should();
+const should = chai.should();
 
-var ISignThis = require('../../index.js');
+const ISignThis = require('../../index.js');
 
-var clientCertificate = '1234';
-var clientKey = '2345';
-var acquirerId = 'clearhaus';
-var merchantId = 'merchant_id';
-var apiClient = 'api_client';
-var authToken = 'auth_token';
-var callbackAuthToken = 'callback_auth_token';
+const clientCertificate = '1234';
+const clientKey = '2345';
+const acquirerId = 'clearhaus';
+const merchantId = 'merchant_id';
+const apiClient = 'api_client';
+const authToken = 'auth_token';
+const callbackAuthToken = 'callback_auth_token';
 
 // Don't log anything during testing
-var log = require('console-log-level')({level: 'fatal'});
+const log = require('console-log-level')({level: 'fatal'});
 
-describe('validateCallback', function () {
+describe('validateCallback', () => {
+  let iSignThis;
 
-  var iSignThis;
-
-  before(function () {
+  before(() => {
     iSignThis = new ISignThis({
-      clientCertificate: clientCertificate,
-      clientKey: clientKey,
-      acquirerId: acquirerId,
-      merchantId: merchantId,
-      apiClient: apiClient,
-      authToken: authToken,
+      clientCertificate,
+      clientKey,
+      acquirerId,
+      merchantId,
+      apiClient,
+      authToken,
       callbackAuthToken,
-      log: log
+      log
     });
   });
 
-  it('should validate request when the right authorization token is provided', function (done) {
-
-    var request = {
+  it('should validate request when the right authorization token is provided', (done) => {
+    const request = {
       headers: {
         host: 'localhost:8221',
-        authorization: 'Bearer '+callbackAuthToken,
+        authorization: `Bearer ${callbackAuthToken}`,
         'content-type': 'application/json',
         'content-length': '9',
         connection: 'close'
       }
     };
 
-    iSignThis.validateCallback(request, function (err, result) {
+    iSignThis.validateCallback(request, (err, result) => {
       if (err) {
         return done(err);
       }
 
-      var expectedResult = {
+      const expectedResult = {
         success: true,
         message: 'Callback is valid'
       };
@@ -68,9 +63,8 @@ describe('validateCallback', function () {
     });
   });
 
-  it('should not validate request when the wrong authorization token is provided', function (done) {
-
-    var request = {
+  it('should not validate request when the wrong authorization token is provided', (done) => {
+    const request = {
       headers: {
         host: 'localhost:8221',
         authorization: 'Bearer wrongtoken',
@@ -80,12 +74,12 @@ describe('validateCallback', function () {
       }
     };
 
-    iSignThis.validateCallback(request, function (err, result) {
+    iSignThis.validateCallback(request, (err, result) => {
       if (err) {
         return done(err);
       }
 
-      var expectedResult = {
+      const expectedResult = {
         success: false,
         message: 'Callback is invalid'
       };
@@ -96,9 +90,8 @@ describe('validateCallback', function () {
     });
   });
 
-  it('should not validate request when no authorization token is provided', function (done) {
-
-    var request = {
+  it('should not validate request when no authorization token is provided', (done) => {
+    const request = {
       headers: {
         host: 'localhost:8221',
         'content-type': 'application/json',
@@ -107,13 +100,11 @@ describe('validateCallback', function () {
       }
     };
 
-    iSignThis.validateCallback(request, function (err) {
-
+    iSignThis.validateCallback(request, (err) => {
       err.should.be.an('error');
       err.message.should.equal('Authorization header missing');
 
       done();
     });
   });
-
 });
