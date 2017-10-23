@@ -150,8 +150,8 @@ ISignThis.prototype._get = function (path, callback) {
     if (err) {
       this.log.error({
         err,
-        requestData: requestOptions.json,
-        requestUrl: requestOptions.url,
+        requestData: options.json,
+        requestUrl: options.url,
         responseBody: body
       }, 'Request error');
       return callback(constructError('Provider communication error', ERROR_PROVIDER, err));
@@ -514,7 +514,7 @@ ISignThis.prototype.createPayment = function iSignThisCreatePayment(options, cal
 ISignThis.prototype.getPayment = function iSignThisGetPayment(paymentId, callback) {
   /* Allow for passing full payment object instead of paymentId */
   if (typeof paymentId === 'object') {
-    paymentId = paymentId.raw.id;
+    paymentId = _.get(paymentId, 'raw.id');
   }
 
   /* Construct path to update this specific payment */
