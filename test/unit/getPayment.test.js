@@ -1,4 +1,6 @@
-var
+'use strict';
+
+const
   request = require('request'),
   sinon = require('sinon'),
   chai = require('chai'),
@@ -7,124 +9,120 @@ var
 chai.use(chaiSubset);
 chai.should();
 
-var ISignThis = require('../../index.js');
+const ISignThis = require('../../index.js');
 
-var acquirerId = 'clearhaus';
-var merchantId = 'merchant_id';
-var apiClient = 'api_client';
-var authToken = 'auth_token';
-var callbackAuthToken = 'auth_token';
+const acquirerId = 'clearhaus';
+const merchantId = 'merchant_id';
+const apiClient = 'api_client';
+const authToken = 'auth_token';
+const callbackAuthToken = 'auth_token';
 
 // Don't log anything during testing
-var log = require('console-log-level')({level: 'fatal'});
+const log = require('console-log-level')({level: 'fatal'});
 
-describe('getPayment', function () {
+describe('getPayment', () => {
+  const transactionId = 'Test';
+  const transactionReference = 'Coinify Card Verification';
 
-  var transactionId = "Test";
-  var transactionReference = "Coinify Card Verification";
+  let iSignThis;
+  let requestGetStub;
 
-  var iSignThis;
-  var requestGetStub;
-
-  var successResponse = {
-    id: "c97f0bfc-c1ac-46c3-96d8-6605a63d380d",
-    uid: "c97f0bfc-c1ac-46c3-96d8-6605a63d380d",
-    secret: "f8fd310d-3755-4e63-ae98-ab3629ef245d",
-    mode: "registration",
+  const successResponse = {
+    id: 'c97f0bfc-c1ac-46c3-96d8-6605a63d380d',
+    uid: 'c97f0bfc-c1ac-46c3-96d8-6605a63d380d',
+    secret: 'f8fd310d-3755-4e63-ae98-ab3629ef245d',
+    mode: 'registration',
     original_message: {
       merchant_id: merchantId,
       transaction_id: transactionId,
       reference: transactionReference
     },
-    expires_at: "2016-03-06T13:36:59.196Z",
+    expires_at: '2016-03-06T13:36:59.196Z',
     transactions: [
       {
         acquirer_id: acquirerId,
-        bank_id: "2774d451-5499-41a6-a37e-6a90f2b8673c",
-        response_code: "20000",
+        bank_id: '2774d451-5499-41a6-a37e-6a90f2b8673c',
+        response_code: '20000',
         success: true,
-        amount: "0.70",
-        currency: "DKK",
-        message_class: "authorization-and-capture",
-        status_code: "20000"
+        amount: '0.70',
+        currency: 'DKK',
+        message_class: 'authorization-and-capture',
+        status_code: '20000'
       },
       {
         acquirer_id: acquirerId,
-        bank_id: "73f63c0b-7c59-416f-89e5-17dcc38b64ac",
-        response_code: "20000",
+        bank_id: '73f63c0b-7c59-416f-89e5-17dcc38b64ac',
+        response_code: '20000',
         success: true,
-        amount: "0.30",
-        currency: "DKK",
-        message_class: "authorization-and-capture",
-        status_code: "20000"
+        amount: '0.30',
+        currency: 'DKK',
+        message_class: 'authorization-and-capture',
+        status_code: '20000'
       }
     ],
-    state: "PENDING",
-    compound_state: "PENDING.AWAIT_SECRET",
+    state: 'PENDING',
+    compound_state: 'PENDING.AWAIT_SECRET',
     card_reference: {
-      card_brand: "MASTERCARD",
-      card_token: "cardToken",
-      masked_pan: "123456...9876",
-      expiry_date: "0721"
+      card_brand: 'MASTERCARD',
+      card_token: 'cardToken',
+      masked_pan: '123456...9876',
+      expiry_date: '0721'
     }
   };
 
-  beforeEach(function (done) {
+  beforeEach((done) => {
     iSignThis = new ISignThis({
-      acquirerId: acquirerId,
-      merchantId: merchantId,
-      apiClient: apiClient,
-      authToken: authToken,
+      acquirerId,
+      merchantId,
+      apiClient,
+      authToken,
       callbackAuthToken,
-      log: log
+      log
     });
 
     requestGetStub = sinon.stub(request, 'get').yields(null, {}, JSON.stringify(successResponse));
     done();
   });
 
-  afterEach(function (done) {
+  afterEach((done) => {
     requestGetStub.restore();
     done();
   });
 
-  describe('success', function () {
-
-    it('correctly sends request and parses response', function (done) {
+  describe('success', () => {
+    it('correctly sends request and parses response', (done) => {
       requestGetStub.yields(null, {statusCode: 200}, JSON.stringify(successResponse));
 
-      iSignThis.getPayment(successResponse.id, function (err, payment) {
+      iSignThis.getPayment(successResponse.id, (err, payment) => {
         if (err) {
           return done(err);
         }
 
         /* Check request data */
         request.get.calledOnce.should.equal(true);
-        request.get.firstCall.args[0].url.should.equal('https://gateway.isignthis.com/v1/authorization/' + successResponse.id);
+        request.get.firstCall.args[0].url.should.equal(`https://gateway.isignthis.com/v1/authorization/${successResponse.id}`);
 
         /* Briefly check payment object. See test for _convertPaymentObject() for full coverage */
         payment.id.should.equal(successResponse.id);
         payment.should.have.property('card');
         payment.card.should.deep.equal({
-          brand: "MASTERCARD",
-          token: "cardToken",
-          bin: "123456",
-          last4: "9876",
-          expiryDate: "0721"
-        })
+          brand: 'MASTERCARD',
+          token: 'cardToken',
+          bin: '123456',
+          last4: '9876',
+          expiryDate: '0721'
+        });
 
         done();
       });
-    })
-
+    });
   });
 
-  describe('failure', function() {
-
-    it('returns an error when payment could not be found', function(done) {
+  describe('failure', () => {
+    it('returns an error when payment could not be found', (done) => {
       requestGetStub.yields(null, {statusCode: 404}, {some: 'body'});
 
-      iSignThis.getPayment(123456, function(err, payment) {
+      iSignThis.getPayment(123456, (err, payment) => {
         err.should.be.an('Error');
         err.code.should.equal('provider_error');
         err.statusCode.should.equal(404);
@@ -132,12 +130,7 @@ describe('getPayment', function () {
         (typeof payment === 'undefined').should.equal(true);
 
         done();
-      })
-
-
+      });
     });
-
   });
-
-
 });

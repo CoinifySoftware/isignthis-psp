@@ -1,6 +1,6 @@
 {
   "name": "isignthis-psp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Module for interfacing with iSignThis as a payment service provider (PSP)",
   "main": "index.js",
   "dependencies": {
@@ -12,12 +12,16 @@
   "devDependencies": {
     "chai": "^3.5.0",
     "chai-subset": "^1.2.1",
+    "eslint": "^4.9.0",
+    "eslint-plugin-mocha": "^4.11.0",
     "mocha": "^2.4.5",
     "mocha-bamboo-reporter": "*",
     "sinon": "^1.17.3"
   },
   "scripts": {
-    "test": "./node_modules/.bin/mocha test/**/*.test.js"
+    "test": "./node_modules/.bin/mocha test/**/*.test.js",
+    "lint": "eslint --color .",
+    "lint-fix": "eslint --fix ."
   },
   "repository": {
     "type": "git",

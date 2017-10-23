@@ -1,92 +1,92 @@
-var
+'use strict';
+
+const
   request = require('request'),
   sinon = require('sinon'),
   chai = require('chai'),
   chaiSubset = require('chai-subset');
 
 chai.use(chaiSubset);
-var should = chai.should();
+const should = chai.should();
 
-var ISignThis = require('../../index.js');
+const ISignThis = require('../../index.js');
 
-var acquirerId = 'clearhaus';
-var merchantId = 'merchant_id';
-var apiClient = 'api_client';
-var authToken = 'auth_token';
-var callbackAuthToken = 'callback_auth_token';
+const acquirerId = 'clearhaus';
+const merchantId = 'merchant_id';
+const apiClient = 'api_client';
+const authToken = 'auth_token';
+const callbackAuthToken = 'callback_auth_token';
 
 // Don't log anything during testing
-var log = require('console-log-level')({level: 'fatal'});
+const log = require('console-log-level')({level: 'fatal'});
 
-describe('createPayment', function () {
+describe('createPayment', () => {
+  const transactionId = 'Test';
+  const transactionReference = 'Coinify Card Verification';
+  let iSignThis;
 
-  var transactionId = "Test";
-  var transactionReference = "Coinify Card Verification";
-  var iSignThis;
-
-  var successResponse = {
-    id: "c97f0bfc-c1ac-46c3-96d8-6605a63d380d",
-    uid: "c97f0bfc-c1ac-46c3-96d8-6605a63d380d",
-    secret: "f8fd310d-3755-4e63-ae98-ab3629ef245d",
-    mode: "registration",
+  const successResponse = {
+    id: 'c97f0bfc-c1ac-46c3-96d8-6605a63d380d',
+    uid: 'c97f0bfc-c1ac-46c3-96d8-6605a63d380d',
+    secret: 'f8fd310d-3755-4e63-ae98-ab3629ef245d',
+    mode: 'registration',
     original_message: {
       merchant_id: merchantId,
       transaction_id: transactionId,
       reference: transactionReference
     },
-    expires_at: "2016-03-06T13:36:59.196Z",
+    expires_at: '2016-03-06T13:36:59.196Z',
     transactions: [
       {
         acquirer_id: acquirerId,
-        bank_id: "2774d451-5499-41a6-a37e-6a90f2b8673c",
-        response_code: "20000",
+        bank_id: '2774d451-5499-41a6-a37e-6a90f2b8673c',
+        response_code: '20000',
         success: true,
-        amount: "0.70",
-        currency: "DKK",
-        message_class: "authorization-and-capture",
-        status_code: "20000"
+        amount: '0.70',
+        currency: 'DKK',
+        message_class: 'authorization-and-capture',
+        status_code: '20000'
       },
       {
         acquirer_id: acquirerId,
-        bank_id: "73f63c0b-7c59-416f-89e5-17dcc38b64ac",
-        response_code: "20000",
+        bank_id: '73f63c0b-7c59-416f-89e5-17dcc38b64ac',
+        response_code: '20000',
         success: true,
-        amount: "0.30",
-        currency: "DKK",
-        message_class: "authorization-and-capture",
-        status_code: "20000"
+        amount: '0.30',
+        currency: 'DKK',
+        message_class: 'authorization-and-capture',
+        status_code: '20000'
       }
     ],
-    state: "PENDING",
-    compound_state: "PENDING.AWAIT_SECRET"
+    state: 'PENDING',
+    compound_state: 'PENDING.AWAIT_SECRET'
   };
 
-  beforeEach(function (done) {
+  beforeEach((done) => {
     iSignThis = new ISignThis({
-      acquirerId: acquirerId,
-      merchantId: merchantId,
-      apiClient: apiClient,
-      authToken: authToken,
+      acquirerId,
+      merchantId,
+      apiClient,
+      authToken,
       callbackAuthToken,
-      log: log
+      log
     });
 
     sinon.stub(request, 'post').yields(null, {statusCode: 201}, JSON.stringify(successResponse));
     done();
   });
 
-  afterEach(function (done) {
+  afterEach((done) => {
     request.post.restore();
     done();
   });
 
+  describe('minimal success request/response', () => {
+    it('correctly sends request and parses response', (done) => {
+      const returnUrl = 'https://coinify.com/payment-return';
 
-  describe('minimal success request/response', function () {
-    it('correctly sends request and parses response', function (done) {
-      var returnUrl = 'https://coinify.com/payment-return';
-
-      var createPaymentOptions = {
-        returnUrl: returnUrl,
+      const createPaymentOptions = {
+        returnUrl,
         amount: 5000,
         currency: 'DKK', // 50.00 DKK
         client: {
@@ -98,39 +98,39 @@ describe('createPayment', function () {
         }
       };
 
-      var minimalExpectedRequestObject = {
-        "acquirer_id": acquirerId,
-        "merchant": {
-          "id": merchantId, // our merchant at IST
-          "name": "node-isignthis-psp", // our internal user name
-          "return_url": returnUrl
+      const minimalExpectedRequestObject = {
+        acquirer_id: acquirerId,
+        merchant: {
+          id: merchantId, // our merchant at IST
+          name: 'node-isignthis-psp', // our internal user name
+          return_url: returnUrl
         },
-        "transaction": {
-          "id": '',
-          "amount": "50.00",
-          "currency": "DKK",
-          "reference": ' '
+        transaction: {
+          id: '',
+          amount: '50.00',
+          currency: 'DKK',
+          reference: ' '
         },
-        "client": {
+        client: {
           ip: createPaymentOptions.client.ip,
           address: undefined,
           citizen_country: undefined,
           birth_country: undefined,
           name: undefined
         },
-        "account": {
-          "identifier_type": "ID",
-          "identifier": createPaymentOptions.account.id,
+        account: {
+          identifier_type: 'ID',
+          identifier: createPaymentOptions.account.id,
           // String with two spaces (min length) because no account.name passed
           full_name: '  '
 
         },
-        "downstream_auth_type": "bearer",
-        "downstream_auth_value": callbackAuthToken,
-        "requested_workflow": "SCA"
+        downstream_auth_type: 'bearer',
+        downstream_auth_value: callbackAuthToken,
+        requested_workflow: 'SCA'
       };
 
-      iSignThis.createPayment(createPaymentOptions, function (err, payment) {
+      iSignThis.createPayment(createPaymentOptions, (err, payment) => {
         if (err) {
           return done(err);
         }
@@ -144,19 +144,17 @@ describe('createPayment', function () {
 
         done();
       });
-    })
-
+    });
   });
 
-  describe('complete success request/response', function () {
+  describe('complete success request/response', () => {
+    it('correctly sends request and parses response', (done) => {
+      const returnUrl = 'https://coinify.com/payment-return';
+      const token = 'theBestTokenInZUniverse';
 
-    it('correctly sends request and parses response', function (done) {
-      var returnUrl = 'https://coinify.com/payment-return';
-      var token =  'theBestTokenInZUniverse';
-
-      var createPaymentOptions = {
+      const createPaymentOptions = {
         acquirerId: 'another_acquirer',
-        returnUrl: returnUrl,
+        returnUrl,
         amount: 5000,
         currency: 'DKK', // 50.00 DKK
         client: {
@@ -181,17 +179,17 @@ describe('createPayment', function () {
         }
       };
 
-      var minimalExpectedRequestObject = {
+      const minimalExpectedRequestObject = {
         acquirer_id: createPaymentOptions.acquirerId,
         merchant: {
           id: merchantId, // our merchant at IST
-          name: "node-isignthis-psp", // our internal user name
+          name: 'node-isignthis-psp', // our internal user name
           return_url: returnUrl
         },
         transaction: {
           id: createPaymentOptions.transaction.id,
-          amount: "50.00",
-          currency: "DKK",
+          amount: '50.00',
+          currency: 'DKK',
           reference: createPaymentOptions.transaction.reference
         },
         client: {
@@ -204,18 +202,18 @@ describe('createPayment', function () {
           name: undefined
         },
         account: {
-          identifier_type: "ID",
+          identifier_type: 'ID',
           identifier: createPaymentOptions.account.id,
           secret: createPaymentOptions.account.secret,
           full_name: createPaymentOptions.account.name
         },
-        requested_workflow: "SCA",
+        requested_workflow: 'SCA',
         cardholder: {
           card_token: token
         }
       };
 
-      iSignThis.createPayment(createPaymentOptions, function (err, payment) {
+      iSignThis.createPayment(createPaymentOptions, (err, payment) => {
         if (err) {
           return done(err);
         }
@@ -231,13 +229,13 @@ describe('createPayment', function () {
       });
     });
 
-    it('correctly sends request and parses response with merchant_id passed in options', function (done) {
-      var returnUrl = 'https://coinify.com/payment-return';
+    it('correctly sends request and parses response with merchant_id passed in options', (done) => {
+      const returnUrl = 'https://coinify.com/payment-return';
 
-      var createPaymentOptions = {
+      const createPaymentOptions = {
         merchantId: 'another_merchant',
         acquirerId: 'another_acquirer',
-        returnUrl: returnUrl,
+        returnUrl,
         amount: 5000,
         currency: 'DKK', // 50.00 DKK
         client: {
@@ -259,17 +257,17 @@ describe('createPayment', function () {
         }
       };
 
-      var minimalExpectedRequestObject = {
+      const minimalExpectedRequestObject = {
         acquirer_id: createPaymentOptions.acquirerId,
         merchant: {
           id: createPaymentOptions.merchantId, // our merchant at IST
-          name: "node-isignthis-psp", // our internal user name
+          name: 'node-isignthis-psp', // our internal user name
           return_url: returnUrl
         },
         transaction: {
           id: createPaymentOptions.transaction.id,
-          amount: "50.00",
-          currency: "DKK",
+          amount: '50.00',
+          currency: 'DKK',
           reference: createPaymentOptions.transaction.reference
         },
         client: {
@@ -280,15 +278,15 @@ describe('createPayment', function () {
           name: undefined
         },
         account: {
-          identifier_type: "ID",
+          identifier_type: 'ID',
           identifier: createPaymentOptions.account.id,
           secret: createPaymentOptions.account.secret,
           full_name: createPaymentOptions.account.name
         },
-        requested_workflow: "SCA"
+        requested_workflow: 'SCA'
       };
 
-      iSignThis.createPayment(createPaymentOptions, function (err, payment) {
+      iSignThis.createPayment(createPaymentOptions, (err, payment) => {
         if (err) {
           return done(err);
         }
