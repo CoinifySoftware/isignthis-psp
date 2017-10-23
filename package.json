@@ -1,6 +1,6 @@
 {
   "name": "isignthis-psp",
-  "version": "0.9.28",
+  "version": "1.0.2",
   "description": "Module for interfacing with iSignThis as a payment service provider (PSP)",
   "main": "index.js",
   "dependencies": {
@@ -34,11 +34,6 @@
     "payment",
     "sca"
   ],
-  "standard": {
-    "env": [
-      "mocha"
-    ]
-  },
   "author": "Jesper Borgstrup",
   "license": "MIT"
 }
