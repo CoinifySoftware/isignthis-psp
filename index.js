@@ -338,7 +338,7 @@ ISignThis.prototype._convertPaymentObject = function (obj) {
    */
   let state = this._convertPaymentState(obj.state, obj.compound_state);
   if (!state) {
-    this.log.error({state, response: JSON.stringify(obj)}, 'Unknown payment state');
+    this.log.error({state, rawResponse: JSON.stringify(obj)}, 'Unknown payment state');
   }
 
   /*
