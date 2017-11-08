@@ -270,7 +270,6 @@ ISignThis.prototype._convertPaymentState = function (state, compoundState) {
       paymentState = STATE_PENDING;
       break;
     default:
-      this.log.error({state}, 'Unknown payment state');
       return null;
   }
 
@@ -338,6 +337,9 @@ ISignThis.prototype._convertPaymentObject = function (obj) {
    * Set state from obj.state parameter
    */
   let state = this._convertPaymentState(obj.state, obj.compound_state);
+  if (!state) {
+    this.log.error({state, response: JSON.stringify(obj)}, 'Unknown payment state');
+  }
 
   /*
    * If state is completed we also check if it was paid using a test card
