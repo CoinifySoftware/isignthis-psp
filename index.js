@@ -495,13 +495,6 @@ ISignThis.prototype.createPayment = function iSignThisCreatePayment(options, cal
     requested_workflow: 'SCA'
   };
 
-  /* card object is optional, only pass it to IST if defined */
-  if (options.card && options.card.token) {
-    // documentation about the format IST expects the card token to be in is here
-    // https://coinify.atlassian.net/browse/DEV-3464
-    data.cardholder = {card_token: options.card.token};
-  }
-
   // If initRecurring param is set, add it to the request
   if (options.initRecurring) {
     data.transaction.init_recurring = options.initRecurring;

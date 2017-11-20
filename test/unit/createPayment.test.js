@@ -173,9 +173,6 @@ describe('createPayment', () => {
         transaction: {
           id: 'tx-id',
           reference: 'tx-reference'
-        },
-        card: {
-          token
         }
       };
 
@@ -207,10 +204,7 @@ describe('createPayment', () => {
           secret: createPaymentOptions.account.secret,
           full_name: createPaymentOptions.account.name
         },
-        requested_workflow: 'SCA',
-        cardholder: {
-          card_token: token
-        }
+        requested_workflow: 'SCA'
       };
 
       iSignThis.createPayment(createPaymentOptions, (err, payment) => {
