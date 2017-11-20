@@ -85,6 +85,7 @@ Argument      | Type   | Default    | Description
 `amount`     | Integer | _Required_ | Amount (denominated in sub-unit of `currency`) to create a payment for.
 `currency`   | String  | _Required_ | Currency code denominating `amount`.
 `client`     | Object  | _Required_ | Object with information about the client initiating the payment. Only the `ip` field is required.
+`initRecurring` | Boolean  | _(Optional)_  | If payment is the first in a series of recurring payments. 
 &rarr;`ip`   | String  | _Required_ | IP address of client
 &rarr;`userAgent`  | String  | _Required_ | Client user agent
 &rarr;`name` | String  | `null`     | Full name of client
@@ -129,7 +130,7 @@ PSP.createPayment(options, function(err, payment) {
     // Handle error
     return;
   }
-  
+
   // Handle payment creation success
 });
 ```
@@ -160,7 +161,7 @@ PSP.getPayment(paymentId, function(err, payment) {
     // Handle error
     return;
   }
-  
+
   // Handle retrieved payment
 });
 ```
@@ -206,7 +207,7 @@ PSP.validateCallback(request, function(err, resultObject) {
     // Handle error
     return;
   }
-  
+
   // Handle retrieved resultObject
 });
 ```
@@ -271,4 +272,3 @@ var requestBody = {
 // result is a payment object
 var payment = PSP.parsePayment(requestBody);
 ```
-
