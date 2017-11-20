@@ -301,5 +301,81 @@ describe('createPayment', () => {
         done();
       });
     });
+
+    it('should add init_recurring to the request if provided', (done) => {
+      const returnUrl = 'https://coinify.com/payment-return';
+
+      const createPaymentOptions = {
+        merchantId: 'another_merchant',
+        acquirerId: 'another_acquirer',
+        returnUrl,
+        amount: 5000,
+        currency: 'DKK', // 50.00 DKK
+        initRecurring: true,
+        client: {
+          ip: '127.0.0.1',
+          userAgent: 'Mozilla/5.0 (iPad; U; CPU OS 3_2_1 like Mac OS X; en-us) AppleWebKit/531...',
+          dob: '1970-01-01',
+          country: 'DK',
+          email: 'test@coinify.com',
+          address: '123 Example street, 4321 Example City'
+        },
+        account: {
+          id: 'accountId',
+          secret: 'the-specific-secret',
+          name: 'John Doe'
+        },
+        transaction: {
+          id: 'tx-id',
+          reference: 'tx-reference'
+        }
+      };
+
+      const minimalExpectedRequestObject = {
+        acquirer_id: createPaymentOptions.acquirerId,
+        merchant: {
+          id: createPaymentOptions.merchantId, // our merchant at IST
+          name: 'node-isignthis-psp', // our internal user name
+          return_url: returnUrl
+        },
+        transaction: {
+          id: createPaymentOptions.transaction.id,
+          amount: '50.00',
+          currency: 'DKK',
+          reference: createPaymentOptions.transaction.reference,
+          init_recurring: true
+        },
+        client: {
+          ip: createPaymentOptions.client.ip,
+          email: createPaymentOptions.client.email,
+          address: createPaymentOptions.client.address,
+          dob: createPaymentOptions.client.dob,
+          name: undefined
+        },
+        account: {
+          identifier_type: 'ID',
+          identifier: createPaymentOptions.account.id,
+          secret: createPaymentOptions.account.secret,
+          full_name: createPaymentOptions.account.name
+        },
+        requested_workflow: 'SCA'
+      };
+
+
+      iSignThis.createPayment(createPaymentOptions, (err, payment) => {
+        if (err) {
+          return done(err);
+        }
+
+        /* Check request data */
+        request.post.calledOnce.should.equal(true);
+        request.post.firstCall.args[0].json.should.containSubset(minimalExpectedRequestObject);
+
+        /* Briefly check payment object. See test for _convertPaymentObject() for full coverage */
+        payment.id.should.equal(successResponse.id);
+
+        done();
+      });
+    });
   });
 });

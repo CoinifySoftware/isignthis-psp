@@ -502,6 +502,11 @@ ISignThis.prototype.createPayment = function iSignThisCreatePayment(options, cal
     data.cardholder = {card_token: options.card.token};
   }
 
+  // If initRecurring param is set, add it to the request
+  if (options.initRecurring) {
+    data.transaction.init_recurring = options.initRecurring;
+  }
+
   /* Perform request */
   this._post(AUTHORIZATION_PATH, data, this._createPaymentRequestCallback(callback));
 };
