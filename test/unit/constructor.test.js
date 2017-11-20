@@ -39,7 +39,7 @@ describe('Constructor', () => {
     done();
   });
 
-  it('should revert to default options for not supplied fields', (done) => {
+  it('should revert to default options for not supplied fields', () => {
     const obj = new ISignThis({
       merchantId: 'merchant_id',
       apiClient: 'account.isignthis.com',
@@ -49,14 +49,6 @@ describe('Constructor', () => {
 
     obj.config.baseUrl.should.equal('https://gateway.isignthis.com');
     obj.config.merchantName.should.equal('node-isignthis-psp');
-    obj.log.should.have.ownProperty('trace')
-      .and.ownProperty('debug')
-      .and.ownProperty('info')
-      .and.ownProperty('warn')
-      .and.ownProperty('error')
-      .and.ownProperty('fatal');
-
-    done();
   });
 
   it('should allow overriding default fields', (done) => {

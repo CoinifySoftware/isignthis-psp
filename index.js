@@ -1,6 +1,7 @@
 'use strict';
 
 const request = require('request'),
+  requestPromise = require('request-promise-native'),
   _ = require('lodash'),
   consoleLogLevel = require('console-log-level');
 
@@ -35,36 +36,29 @@ class ISignThis {
   /**
    * Create an instance of ISignThis
    *
-   * @param {object} options The following fields are required:<ul>
-   *                           <li><code>merchantId</code> - Merchant to identify as</li>
-   *                           <li><code>apiClient</code> - API client used for authorization</li>
-   *                           <li><code>authToken</coden> - Authorization token used for communication</li
-   *                         </ul>
-   *                         The following fields are optional:<ul>
-   *                           <li><code>log</code> - Bunyan-compatible logger</li>
-   *                           <li><code>baseUrl</code> - Base URL (without trailing slash) to iSignThis to use instead of default</li>
-   *                           <li><code>acquirerId</code> - Default acquirer to use if none specified when creating a payment</li>
-   *                         </ul>
+   * @param {object} options Configuration
+   * @param {string} options.merchantId Merchant to identify as
+   * @param {string} options.apiClient API client used for authorization
+   * @param {string} options.authToken Auth token used for communication
+   * @param {string} options.callbackAuthToken Auth token used for validating callbacks
+   * @param {string} options.log (optional) Bunyan-compatible logger
+   * @param {string} options.baseUrl (optional) Base URL (without trailing slash) to iSignThis to use instead of default
+   * @param {string} options.acquirerId (optional) Default acquirer to use if none specified when creating a payment
+   *
    * @constructor
    */
   constructor(options) {
     this.config = _.defaultsDeep(options, DEFAULT_OPTIONS);
 
-    /*
-     * Ensure required options provided
-     */
+    // Ensure required options provided
     if (!this.config.merchantId || !this.config.apiClient || !this.config.authToken || !this.config.callbackAuthToken) {
       throw new Error('Missing configuration options');
     }
 
-    /*
-     * Set default logger if none provided
-     */
+    // Set default logger if none provided
     this.log = options.log || consoleLogLevel({});
 
-    /*
-     * Prepare default options for HTTP requests
-     */
+    // Prepare default options for HTTP requests
     this.defaultRequestOptions = {
       headers: {
         'Content-Type': 'application/json',
@@ -78,17 +72,17 @@ class ISignThis {
    * Creates a new payment with iSignThis.
    *
    * @param {object} options
-   * @param {function} callback Callback(err, payment)
+   * @returns {Promise<payment>} Resolves in a payment object
    */
-  createPayment(options, callback) {
-    /* Check for required arguments (options) */
+  async createPayment(options) {
+    // Check for required arguments (options)
     if (!options.returnUrl || !options.amount || !options.currency ||
       !options.client || !options.client.ip ||
       !options.account || !options.account.id) {
       throw new RangeError('Insufficient arguments to createPayment');
     }
 
-    /* Set options from default values */
+    // Set options from default values
     if (!options.acquirerId) {
       if (!this.config.acquirerId) {
         throw new RangeError('No acquirerId provided');
@@ -96,22 +90,22 @@ class ISignThis {
       options.acquirerId = this.config.acquirerId;
     }
 
-    /* Extract transaction ID and reference strings */
+    // Extract transaction ID and reference strings
     const transactionId = options.transaction && options.transaction.id || this.config.transactionId;
     // Default value is a string with a space in it (iSignThis won't accept empty string here, so we add a space)
     const transactionReference = options.transaction && options.transaction.reference || ' ';
 
-    /* Only allow whitelisted keys in client and account objects to pass through to the request object */
+    // Only allow whitelisted keys in client and account objects to pass through to the request object
     let client = _.pick(options.client, ['ip', 'name', 'dob', 'country', 'email', 'address']);
     let account = _.pick(options.account, ['id', 'secret', 'name']);
 
     account = this._createPaymentSanitizeAccountObject(account);
     client = this._createPaymentSanitizeClientObject(client);
 
-    /* Convert amount to main unit. Assume two decimals for all currencies */
+    // Convert amount to main unit. Assume two decimals for all currencies
     const amountMainUnit = Currency.fromSmallestSubunit(options.amount, options.currency).toFixed(2);
 
-    /* Construct POST request data */
+    // Construct POST request data
     const data = {
       // "repeat": false,
       acquirer_id: options.acquirerId,
@@ -139,8 +133,11 @@ class ISignThis {
       data.transaction.init_recurring = options.initRecurring;
     }
 
-    /* Perform request */
-    this._post(AUTHORIZATION_PATH, data, this._createPaymentRequestCallback(callback));
+    // Perform request
+    const response = await this._post(AUTHORIZATION_PATH, data);
+
+    // Parse response and return payment object
+    return this._convertPaymentObject(response);
   }
 
   /**
@@ -170,47 +167,29 @@ class ISignThis {
    * @param {function} callback Callback(err, payment)
    * @returns {undefined}
    */
-  cancelPayment(paymentId, callback) {
+  async cancelPayment(paymentId) {
     if (!paymentId) {
-      return callback(constructError('Payment Id not provided', ERROR_MODULE, null));
+      throw constructError('Payment Id not provided', ERROR_MODULE, null);
     }
 
     const requestPath = `${AUTHORIZATION_PATH}/${paymentId}/cancel`;
 
-    return this._post(requestPath, {}, (err, httpResponse, body) => {
-      if (err) {
-        /*
-         * If error, check if it's because the payment cannot be cancelled. If so, return 'invalid_state' error code.
-         *
-         * Check for the following body:
-         * {error:[{'transaction-complete':"Transaction is already final and can't be cancelled"}]}
-         */
-        if (err.statusCode === 400) {
-          const bodyObject = JSON.parse(err.responseBody || '{}');
-          const errorObject = _.isObject(bodyObject) && bodyObject.error ? bodyObject.error : [];
-          // check if details are provided
-          if (_.isObject(bodyObject) && bodyObject.details) {
-            bodyObject.details.forEach((detail) => {
-              errorObject.push({[detail.id]: detail.message});
-            });
-          }
-          const transactionCompleteError = _.find(errorObject, value => value['transaction-complete']);
+    try {
+      const response = await this._post(requestPath, {});
+      return response;
+    } catch(err) {
+      if (err.statusCode === 400) {
+        const transactionCompleteError = _.find(err.error.details, _.matchesProperty('id', 'transaction-complete'));
 
-          if (transactionCompleteError) {
-            /*
-             * Payment could not be cancelled. Return 'invalid_state' error
-             */
-            const errorMessage = transactionCompleteError['transaction-complete'];
-            const wrappedError = constructError(errorMessage, ERROR_INVALID_STATE, err);
-            return callback(wrappedError);
-          }
+        // Payment could not be cancelled. Return 'invalid_state' error
+        if (transactionCompleteError) {
+          throw constructError(transactionCompleteError.message, ERROR_INVALID_STATE, err);
         }
-
-        return callback(err);
       }
 
-      return callback(null, httpResponse, body);
-    });
+      // If unknown error - just throw
+      throw err;
+    }
   }
 
   /**
@@ -364,47 +343,27 @@ class ISignThis {
   /**
    *
    * @param {string} path Path with leading slash
-   * @param {object} data Object to send as JSON data
-   * @param {function} callback Callback(err, object)
+   * @param {object} requestBody Object to send as JSON data
+   * @returns {Promise<object>} Resolves in a response object
    * @private
    */
-  _post(path, data, callback) {
-    /* Prepare options for the request, extended from default options */
+  _post(path, requestBody) {
+    // Prepare options for the request, extended from default options
     const options = _.defaultsDeep({
-      url: this.config.baseUrl + path,
-      json: data
+      body: requestBody,
+      json: true,
+      url: this.config.baseUrl + path
     }, this.defaultRequestOptions);
 
-    /* Briefly log that we are about to perform a POST request */
+    // Briefly log that we are about to perform a POST request
     this.log.info({
       url: options.url,
-      data
+      request: {
+        body: JSON.stringify(requestBody)
+      }
     }, 'Performing POST request');
 
-    request.post(options, (err, httpResponse, body) => {
-      /* Check for error */
-      if (err) {
-        this.log.error({
-          err,
-          requestData: options.json,
-          requestUrl: options.url,
-          responseBody: JSON.stringify(body || '')
-        }, 'Request error');
-        return callback(constructError('Provider communication error', ERROR_PROVIDER, err));
-      }
-
-      /* Check for non-2xx response */
-      if (httpResponse.statusCode < 200 || httpResponse.statusCode > 299) {
-        const error = constructError(`Expected HTTP status 2xx. Received ${httpResponse.statusCode}`, ERROR_PROVIDER, null);
-        error.statusCode = httpResponse.statusCode;
-        error.requestData = options.json;
-        error.requestUrl = options.url;
-        error.responseBody = JSON.stringify(body || '');
-        return callback(error);
-      }
-
-      return callback(null, httpResponse, body);
-    });
+    return requestPromise.post(options);
   }
 
 
