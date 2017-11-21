@@ -4,10 +4,9 @@
   "description": "Module for interfacing with iSignThis as a payment service provider (PSP)",
   "main": "index.js",
   "dependencies": {
-    "async": "^1.5.2",
     "console-log-level": "^1.2.1",
     "lodash": "^4.6.1",
-    "request": "^2.69.0",
+    "request": "^2.83.0",
     "request-promise-native": "^1.0.5"
   },
   "devDependencies": {
