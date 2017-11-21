@@ -154,8 +154,8 @@ The function return a Promise which resolves in a [payment object](#module-payme
 #### Example
 
 ```javascript
-var paymentId = '12345678-4321-2345-6543-456787656789';
-return PSP.getPayment(options)
+const paymentId = '12345678-4321-2345-6543-456787656789';
+return PSP.getPayment(paymentId)
   .then(payment => {
     // Handle payment creation success
   })
