@@ -52,10 +52,13 @@ describe('createPayment - INTEGRATION', () => {
   it('should construct, send and parse response', async () => {
     const returnUrl = 'https://coinify.com/payment-return';
 
-    const createPaymentOptions = {
+    const processArgs = {
       returnUrl,
-      amount: 5000,
-      currency: 'DKK', // 50.00 DKK
+      recurringId: 'recurring-id',
+      transaction: {
+        id: '1234',
+        reference: 'CY1239'
+      },
       client: {
         ip: '127.0.0.1',
         userAgent: 'Mozilla/5.0 (iPad; U; CPU OS 3_2_1 like Mac OS X; en-us) AppleWebKit/531...'
@@ -65,7 +68,7 @@ describe('createPayment - INTEGRATION', () => {
       }
     };
 
-    const payment = await iSignThis.createPayment(createPaymentOptions);
+    const payment = await iSignThis.processRecurringPayment(processArgs);
 
     // Check request data
     expect(requestStub.calledOnce).to.equal(true);
@@ -74,22 +77,20 @@ describe('createPayment - INTEGRATION', () => {
         acquirer_id: 'clearhaus',
         merchant: {
           id: merchantId,
-          name: 'node-isignthis-psp',
-          return_url: returnUrl
+          name: 'node-isignthis-psp'
         },
         transaction: {
-          id: '',
-          amount: '50.00',
-          currency: 'DKK',
-          reference: ' '
+          id: processArgs.transaction.id,
+          reference: processArgs.transaction.reference,
+          recurring_id: processArgs.recurringId
         },
         client: {
-          ip: createPaymentOptions.client.ip,
+          ip: processArgs.client.ip,
           name: undefined,
           address: undefined
         },
         account: {
-          identifier: createPaymentOptions.account.id,
+          identifier: processArgs.account.id,
           identifier_type: 'ID',
           full_name: '  '
         },
@@ -98,7 +99,7 @@ describe('createPayment - INTEGRATION', () => {
         requested_workflow: 'SCA'
       },
       json: true,
-      url: 'https://gateway.isignthis.com/v1/authorization',
+      url: 'https://gateway.isignthis.com/v1/recurring/authorization',
       headers: {
         'Content-Type': 'application/json',
         From: 'api_client',

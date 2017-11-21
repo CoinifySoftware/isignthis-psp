@@ -31,6 +31,7 @@ const DEFAULT_OPTIONS = {
 };
 
 const AUTHORIZATION_PATH = '/v1/authorization';
+const PROCESS_RECURRING_PATH = '/v1/recurring/authorization';
 
 class ISignThis {
   /**
@@ -69,72 +70,59 @@ class ISignThis {
   }
 
   /**
-   * Creates a new payment with iSignThis.
+   * Process a recurring payment using a recurringId in the request
    *
    * @param {object} options
    * @returns {Promise<payment>} Resolves in a payment object
    */
-  async createPayment(options) {
+  async processRecurringPayment(processArgs) {
+    // Check for recurringId
+    if (!processArgs.recurringId) {
+      throw new RangeError('recurringId must be provided');
+    }
+
+    // Construct request body
+    const requestBody = this._constructPaymentRequestBody(processArgs);
+
+    // Add recurringId to request
+    requestBody.transaction.recurring_id = processArgs.recurringId;
+
+    // Call iSignThis endpoint
+    const response = await this._post(PROCESS_RECURRING_PATH, requestBody);
+
+    // Parse response and return payment object
+    return this._convertPaymentObject(response);
+  }
+
+  /**
+   * Creates a new payment with iSignThis.
+   *
+   * @param {object} createArgs Create arguments
+   * @returns {Promise<payment>} Resolves in a payment object
+   */
+  async createPayment(createArgs) {
     // Check for required arguments (options)
-    if (!options.returnUrl || !options.amount || !options.currency ||
-      !options.client || !options.client.ip ||
-      !options.account || !options.account.id) {
-      throw new RangeError('Insufficient arguments to createPayment');
+    if (!createArgs.amount || !createArgs.currency) {
+      throw new RangeError('Amount and currency should be provided');
     }
 
-    // Set options from default values
-    if (!options.acquirerId) {
-      if (!this.config.acquirerId) {
-        throw new RangeError('No acquirerId provided');
-      }
-      options.acquirerId = this.config.acquirerId;
-    }
-
-    // Extract transaction ID and reference strings
-    const transactionId = options.transaction && options.transaction.id || this.config.transactionId;
-    // Default value is a string with a space in it (iSignThis won't accept empty string here, so we add a space)
-    const transactionReference = options.transaction && options.transaction.reference || ' ';
-
-    // Only allow whitelisted keys in client and account objects to pass through to the request object
-    let client = _.pick(options.client, ['ip', 'name', 'dob', 'country', 'email', 'address']);
-    let account = _.pick(options.account, ['id', 'secret', 'name']);
-
-    account = this._createPaymentSanitizeAccountObject(account);
-    client = this._createPaymentSanitizeClientObject(client);
+    // Construct request body
+    const requestBody = this._constructPaymentRequestBody(createArgs);
 
     // Convert amount to main unit. Assume two decimals for all currencies
-    const amountMainUnit = Currency.fromSmallestSubunit(options.amount, options.currency).toFixed(2);
+    const amountMainUnit = Currency.fromSmallestSubunit(createArgs.amount, createArgs.currency).toFixed(2);
 
-    // Construct POST request data
-    const data = {
-      // "repeat": false,
-      acquirer_id: options.acquirerId,
-      merchant: {
-        id: options.merchantId || this.config.merchantId, // our merchant at IST
-        name: this.config.merchantName, // our internal user name
-        return_url: options.returnUrl // our return URL for user to return to
-      },
-      transaction: {
-        id: transactionId, // Internal reference for the transaction
-        datetime: new Date().toISOString(), // "2015-12-16T09:22:13.48+01:00",
-        amount: amountMainUnit,
-        currency: options.currency,
-        reference: transactionReference
-      },
-      client,
-      account,
-      downstream_auth_type: 'bearer',
-      downstream_auth_value: this.config.callbackAuthToken,
-      requested_workflow: 'SCA'
-    };
+    // Add amount and currency to request body
+    requestBody.transaction.amount = amountMainUnit;
+    requestBody.transaction.currency = createArgs.currency;
 
     // If initRecurring param is set, add it to the request
-    if (options.initRecurring) {
-      data.transaction.init_recurring = options.initRecurring;
+    if (createArgs.initRecurring) {
+      requestBody.transaction.init_recurring = createArgs.initRecurring;
     }
 
     // Perform request
-    const response = await this._post(AUTHORIZATION_PATH, data);
+    const response = await this._post(AUTHORIZATION_PATH, requestBody);
 
     // Parse response and return payment object
     return this._convertPaymentObject(response);
@@ -271,6 +259,47 @@ class ISignThis {
     return requestPromise.post(options);
   }
 
+  /**
+   * Construct request body for IST create payment and process recurring endpoints
+   *
+   * @param  {object} args Arguments provided
+   * @return {object}      Returns request body
+   */
+  _constructPaymentRequestBody(args) {
+    // Check for required arguments
+    if (!args.returnUrl || !args.client || !args.client.ip ||
+      !args.account || !args.account.id) {
+      throw new RangeError('Insufficient arguments to createPayment');
+    }
+
+    // Set acquirerId
+    const acquirerId = args.acquirerId || this.config.acquirerId;
+    // Extract transaction ID and reference strings
+    const transactionId = args.transaction && args.transaction.id || this.config.transactionId;
+    // Default value is a string with a space in it (iSignThis won't accept empty string here, so we add a space)
+    const transactionReference = args.transaction && args.transaction.reference || ' ';
+    // Construct account and client object
+    const account = this._createPaymentSanitizeAccountObject(args.account);
+    const client = this._createPaymentSanitizeClientObject(args.client);
+
+    return {
+      client, account,
+      acquirer_id: acquirerId,
+      merchant: {
+        id: args.merchantId || this.config.merchantId, // our merchant at IST
+        name: this.config.merchantName, // our internal user name
+        return_url: args.returnUrl // our return URL for user to return to
+      },
+      transaction: {
+        id: transactionId, // Internal reference for the transaction
+        datetime: new Date().toISOString(), // "2015-12-16T09:22:13.48+01:00",
+        reference: transactionReference
+      },
+      downstream_auth_type: 'bearer',
+      downstream_auth_value: this.config.callbackAuthToken,
+      requested_workflow: 'SCA'
+    };
+  }
 
   /**
    * Converts a state string from an iSignThis payment object to one of the allowed states of a payment:
@@ -436,11 +465,13 @@ class ISignThis {
   /**
    * Sanitize and return an `account` object as received inside the options to createPayment
    *
-   * @param {object} account
+   * @param {object} args Account args
    * @returns {object} Sanitized object, ready to POST to iSignThis
    * @private
    */
-  _createPaymentSanitizeAccountObject(account) {
+  _createPaymentSanitizeAccountObject(args) {
+    const account = _.pick(args, ['id', 'secret', 'name']);
+
     /*
      * Sanitize account object:
      * * Rename 'id' key to 'identifier'
@@ -465,11 +496,13 @@ class ISignThis {
   /**
    * Sanitize and return an `client` object as received inside the options to createPayment
    *
-   * @param {object} client
+   * @param {object} args
    * @returns {object} Sanitized object, ready to POST to iSignThis
    * @private
    */
-  _createPaymentSanitizeClientObject(client) {
+  _createPaymentSanitizeClientObject(args) {
+    const client = _.pick(args, ['ip', 'name', 'dob', 'country', 'email', 'address']);
+
     // Transform name to empty string if null
     client.name = client.name === null ? '' : client.name;
     // Transform address to empty string if null
