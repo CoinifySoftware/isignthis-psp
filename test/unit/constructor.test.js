@@ -5,7 +5,7 @@ const expect = require('chai').expect;
 const ISignThis = require('../../index.js');
 
 describe('Constructor', () => {
-  it('should throw an error on missing client certificate and merchant name', (done) => {
+  it('should throw an error on missing client certificate and merchant name', () => {
     let fn = () => {
       const iSignThis = new ISignThis({
       // Missing merchant id
@@ -35,33 +35,23 @@ describe('Constructor', () => {
     };
 
     expect(fn).to.throw(Error, 'Missing configuration options');
-
-    done();
   });
 
-  it('should revert to default options for not supplied fields', (done) => {
-    const obj = new ISignThis({
+  it('should revert to default options for not supplied fields', () => {
+    const iSignThis = new ISignThis({
       merchantId: 'merchant_id',
       apiClient: 'account.isignthis.com',
       authToken: 'auth_token',
       callbackAuthToken: 'callbackAuthToken'
     });
 
-    obj.config.baseUrl.should.equal('https://gateway.isignthis.com');
-    obj.config.merchantName.should.equal('node-isignthis-psp');
-    obj.log.should.have.ownProperty('trace')
-      .and.ownProperty('debug')
-      .and.ownProperty('info')
-      .and.ownProperty('warn')
-      .and.ownProperty('error')
-      .and.ownProperty('fatal');
-
-    done();
+    expect(iSignThis.config.baseUrl).to.equal('https://gateway.isignthis.com');
+    expect(iSignThis.config.merchantName).to.equal('node-isignthis-psp');
   });
 
-  it('should allow overriding default fields', (done) => {
+  it('should allow overriding default fields', () => {
     const logMock = {debug (message) {}};
-    const obj = new ISignThis({
+    const iSignThis = new ISignThis({
       merchantId: 'merchant_id',
       merchantName: 'The Merchant',
       apiClient: 'account.isignthis.com',
@@ -71,13 +61,12 @@ describe('Constructor', () => {
       log: logMock
     });
 
-    obj.config.merchantId.should.equal('merchant_id');
-    obj.config.merchantName.should.equal('The Merchant');
-    obj.config.baseUrl.should.equal('https://www.example.com');
-    obj.config.apiClient.should.equal('account.isignthis.com');
-    obj.config.authToken.should.equal('auth_token');
-    obj.log.should.equal(logMock);
 
-    done();
+    expect(iSignThis.config.baseUrl).to.equal('https://www.example.com');
+    expect(iSignThis.config.merchantId).to.equal('merchant_id');
+    expect(iSignThis.config.merchantName).to.equal('The Merchant');
+    expect(iSignThis.config.apiClient).to.equal('account.isignthis.com');
+    expect(iSignThis.config.authToken).to.equal('auth_token');
+    expect(iSignThis.config.log).to.equal(logMock);
   });
 });

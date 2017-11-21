@@ -1,5 +1,7 @@
 # isignthis-psp
 
+**UPDATE 2.x.x:** Node-style callbacks are deprecated, but can still be found in versions 1.x.x
+
 _Module for interfacing with iSignThis as a payment service provider (PSP)_
 
 ## _Constructor_
@@ -67,14 +69,14 @@ Field         | Type      | Description
 &rarr;`bin`     | String  | The credit card bin
 &rarr;`brand`   | String  | The credit card brand
 &rarr;`expiryDate`   | String  | The credit card expiry date (e.g. `1217` for Dec, 2017)
-
+&rarr;`recurringId`   | String  | ID to use for recurring payments.
 
 ### `createPayment`: Create payment
 <a name="module–payment-create"></a>
 
 _Initiate a payment_
 
-`createPayment(options, callback)`
+`createPayment(options)`
 
 #### `options` arguments
 
@@ -85,8 +87,8 @@ Argument      | Type   | Default    | Description
 `amount`     | Integer | _Required_ | Amount (denominated in sub-unit of `currency`) to create a payment for.
 `currency`   | String  | _Required_ | Currency code denominating `amount`.
 `client`     | Object  | _Required_ | Object with information about the client initiating the payment. Only the `ip` field is required.
+`initRecurring` | Boolean  | _(Optional)_  | If payment is the first in a series of recurring payments.
 &rarr;`ip`   | String  | _Required_ | IP address of client
-&rarr;`userAgent`  | String  | _Required_ | Client user agent
 &rarr;`name` | String  | `null`     | Full name of client
 &rarr;`dob`  | String   | `null`     | Date of birth of client
 &rarr;`country`  | String  | `null`     | Country code (ISO-3166-1 alpha-2) of country of citizenship of client
@@ -99,13 +101,11 @@ Argument      | Type   | Default    | Description
 `transaction`   | Object  | `{}`       | Information about the transaction(s) related to the payment
 &rarr;`id`      | String  | `null`     | ???
 &rarr;`reference` | String  | `null`   | Internal reference for the transaction(s)
-`card`          | Object  | _(Optional) | Information about the card
-&rarr;`token`   | String  | `null`   | The credit card token to use for a preauthorized card payment
 
 
-#### Callback result
+#### Returns
 
-The callback returns a [payment object](#module-payment-object).
+The function return a Promise which resolves in a [payment object](#module-payment-object).
 
 #### Example
 
@@ -124,13 +124,13 @@ var options = {
   }
 };
 
-PSP.createPayment(options, function(err, payment) {
-  if (err) {
+return PSP.createPayment(options)
+  .then(payment => {
+    // Handle payment creation success
+  })
+  .catch(err => {
     // Handle error
-    return;
-  }
-  
-  // Handle payment creation success
+  });
 });
 ```
 
@@ -139,7 +139,7 @@ PSP.createPayment(options, function(err, payment) {
 
 _Get updated information about an existing payment_
 
-`getPayment(paymentId, callback);`
+`getPayment(paymentId);`
 
 #### Arguments
 
@@ -147,30 +147,30 @@ Argument      | Type   | Default    | Description
 ------------- | ------ | ---------- | -----------
 `paymentId`   | String | _Required_ | ID of payment to query. Comes from the `id` property of the [payment object](#module-payment-object).
 
-#### Callback result
+#### Returns
 
-The callback returns a [payment object](#module-payment-object).
+The function return a Promise which resolves in a [payment object](#module-payment-object).
 
 #### Example
 
 ```javascript
-var paymentId = '12345678-4321-2345-6543-456787656789';
-PSP.getPayment(paymentId, function(err, payment) {
-  if (err) {
+const paymentId = '12345678-4321-2345-6543-456787656789';
+return PSP.getPayment(paymentId)
+  .then(payment => {
+    // Handle payment creation success
+  })
+  .catch(err => {
     // Handle error
-    return;
-  }
-  
-  // Handle retrieved payment
+  });
 });
 ```
 
-### `validateCallback`: Validate callback
+### `isCallbackValid`: Validate callback
 <a name="module–callback-validate"></a>
 
 _Validate a callback sent from iSignThis._
 
-`validateCallback(request, callback);`
+`isCallbackValid(request);`
 
 #### Arguments
 
@@ -178,19 +178,14 @@ Argument      | Type   | Default    | Description
 ------------- | ------ | ---------- | -----------
 `request`     | Object | _Required_ | Whole request object with headers and body.
 
-#### Callback result
+#### Returns
 
-Callback can result in a result or error. If the signature or the callback is invalid we return a result object with `success: false` if callback is valid we return a result object with `success: true`. If some other error occurs we return an error object.
-
-Field         | Type      | Description
-------------- | --------- | -----------
-`success`      | Bolean    | True if callback is validated, false otherwise
-`message`     | String    | Message describing the result (_Signature is invalid_)
+Returns true if callback is valid
 
 #### Example
 
 ```javascript
-var request = {
+const request = {
   headers: {
   	 'content-type': 'application/json',
 	  accept: 'application/json',
@@ -201,14 +196,9 @@ var request = {
   },
   body: {}
 };
-PSP.validateCallback(request, function(err, resultObject) {
-  if (err) {
-    // Handle error
-    return;
-  }
-  
-  // Handle retrieved resultObject
-});
+
+// Result is either true or false
+const result = isCallbackValid(request);
 ```
 
 ### `parsePayment`: Read payment
@@ -231,7 +221,7 @@ This function returns a [payment object](#module-payment-object).
 #### Example
 
 ```javascript
-var requestBody = {
+const requestBody = {
   id: "c97f0bfc-c1ac-46c3-96d8-6605a63d380d",
   uid: "c97f0bfc-c1ac-46c3-96d8-6605a63d380d",
   secret: "f8fd310d-3755-4e63-ae98-ab3629ef245d",
@@ -269,6 +259,5 @@ var requestBody = {
 }
 
 // result is a payment object
-var payment = PSP.parsePayment(requestBody);
+const payment = PSP.parsePayment(requestBody);
 ```
-
