@@ -1,7 +1,6 @@
 'use strict';
 
-const request = require('request'),
-  requestPromise = require('request-promise-native'),
+const requestPromise = require('request-promise-native'),
   _ = require('lodash'),
   consoleLogLevel = require('console-log-level');
 
@@ -447,7 +446,11 @@ class ISignThis {
       const cardNumber = obj.card_reference.masked_pan;
       card.bin = cardNumber.substring(0, 6);
       card.last4 = cardNumber.substring(cardNumber.length - 4);
-      card.recurringId = obj.card_reference.recurring_id;
+
+      // Add recurringId if present
+      if (obj.card_reference.recurring_id) {
+        card.recurringId = obj.card_reference.recurring_id;
+      }
     }
 
     return {

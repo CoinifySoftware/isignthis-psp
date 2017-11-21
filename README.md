@@ -1,5 +1,7 @@
 # isignthis-psp
 
+**UPDATE 2.x.x:** Node-style callbacks are deprecated, but can still be found in versions 1.x.x
+
 _Module for interfacing with iSignThis as a payment service provider (PSP)_
 
 ## _Constructor_
@@ -67,7 +69,7 @@ Field         | Type      | Description
 &rarr;`bin`     | String  | The credit card bin
 &rarr;`brand`   | String  | The credit card brand
 &rarr;`expiryDate`   | String  | The credit card expiry date (e.g. `1217` for Dec, 2017)
-
+&rarr;`recurringId`   | String  | ID to use for recurring payments.
 
 ### `createPayment`: Create payment
 <a name="module–payment-create"></a>
