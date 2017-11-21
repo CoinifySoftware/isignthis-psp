@@ -85,7 +85,7 @@ Argument      | Type   | Default    | Description
 `amount`     | Integer | _Required_ | Amount (denominated in sub-unit of `currency`) to create a payment for.
 `currency`   | String  | _Required_ | Currency code denominating `amount`.
 `client`     | Object  | _Required_ | Object with information about the client initiating the payment. Only the `ip` field is required.
-`initRecurring` | Boolean  | _(Optional)_  | If payment is the first in a series of recurring payments. 
+`initRecurring` | Boolean  | _(Optional)_  | If payment is the first in a series of recurring payments.
 &rarr;`ip`   | String  | _Required_ | IP address of client
 &rarr;`userAgent`  | String  | _Required_ | Client user agent
 &rarr;`name` | String  | `null`     | Full name of client

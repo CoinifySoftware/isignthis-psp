@@ -144,28 +144,29 @@ class ISignThis {
    * Retrieves information about a specific payment
    *
    * @param {int|object} paymentId Payment object or ID of payment
-   * @param {function} callback Callback(err, payment)
-   * @returns {object}
+   * @returns {Promise<payment>} Resolves in a payment object
    */
-  getPayment(paymentId, callback) {
-    /* Allow for passing full payment object instead of paymentId */
+  async getPayment(paymentId) {
+    // Allow for passing full payment object instead of paymentId
     if (typeof paymentId === 'object') {
       paymentId = _.get(paymentId, 'raw.id');
     }
 
-    /* Construct path to update this specific payment */
+    // Construct path to update this specific payment
     const path = `${AUTHORIZATION_PATH}/${paymentId}`;
 
-    /* Perform request */
-    return this._get(path, this._createPaymentRequestCallback(callback));
+    // Perform request
+    const response = await this._get(path);
+
+    // Parse response and return payment object
+    return this._convertPaymentObject(response);
   }
 
   /**
    * Cancels a specific payment
    *
-   * @param {int} paymentId Payment ID
-   * @param {function} callback Callback(err, payment)
-   * @returns {undefined}
+   * @param {string} paymentId Payment ID
+   * @returns {object} Raw response
    */
   async cancelPayment(paymentId) {
     if (!paymentId) {
@@ -193,46 +194,22 @@ class ISignThis {
   }
 
   /**
-   * Validate by the request object and return callback with resultObject if the request
+   * Validate request if correct autorization header is set
    *
-   * If callback is validated we return 'success: true' and if callback is not validated we
-   * return `success: false`. Both with a 'message' describing the result.
-   *
-   * Example of a resultObject:
-   * {
-   *   success: false,
-   *   message: 'Bearer token is invalid'
-   * }
-   *
-   * @param request
-   * @param {function} callback Callback(err, resultObject)
+   * @param {object} request Raw request object
+   * @returns {boolean}
    */
-  validateCallback(request, callback) {
-    /* Check if token is provided */
+  isCallbackValid(request) {
+    // Check if token is provided
     if (!request.headers.authorization) {
-      return callback(constructError('Authorization header missing', ERROR_REQUEST, null));
+      throw constructError('Authorization header missing', ERROR_REQUEST, null);
     }
 
-    /* Get token */
+    // Get token
     const token = request.headers.authorization.split(' ')[1];
 
-    /* Return if token is validated */
-    if (token === this.config.callbackAuthToken) {
-      return callback(null, {
-        success: true,
-        message: 'Callback is valid'
-      });
-    }
-
-    /* Log request object and return invalid callback */
-    this.log.warn({
-      request
-    }, 'Callback is invalid');
-
-    return callback(null, {
-      success: false,
-      message: 'Callback is invalid'
-    });
+    // Return if token is valid
+    return token === this.config.callbackAuthToken;
   }
 
   /**
@@ -246,101 +223,29 @@ class ISignThis {
   }
 
   /**
-   * Create a callback function for a HTTP request that parses and returns JSON data to the supplied callback.
-   *
-   * @param {function} callback Callback(err, obj)
-   * @returns {Function}
-   * @private
-   */
-  _createPaymentRequestCallback(callback) {
-    return (err, httpResponse, body) => {
-      if (err) {
-        return callback(err);
-      }
-      /*
-       * Parse the body to an object if necessary.
-       * On POST requests, body is already a JS object,
-       * while on GET requests, it is a string with a JSON representation of an object
-       */
-      let responseObject = body;
-      if (typeof responseObject !== 'object') {
-        try {
-          responseObject = JSON.parse(responseObject);
-        } catch (err) {
-          this.log.error({
-            httpResponse,
-            err
-          }, 'Couldn\'t parse response body');
-          return callback(constructError('Couldn\'t parse response body', ERROR_PROVIDER, err));
-        }
-      }
-
-      /* Check for body */
-      if (!responseObject) {
-        this.log.error({
-          httpResponse
-        }, 'Empty response body');
-        return callback(constructError('Empty response body', ERROR_PROVIDER, null));
-      }
-
-      /* If response object contains an error - return error */
-      if (responseObject.error) {
-        return callback(constructError('Error in response object', ERROR_PROVIDER, responseObject));
-      }
-
-      const paymentObject = this._convertPaymentObject(responseObject);
-
-      return callback(null, paymentObject);
-    };
-  }
-
-  /**
-   * Perform a GET request to a specific path
+   * Perform a GET request
    *
    * @param {string} path Path with leading slash
-   * @param {function} callback Callback(err, object)
+   * @returns {Promise<object>} Resolves in response of the request
    * @private
    */
-  _get(path, callback) {
-    /* Prepare options for the request, extended from default options */
+  _get(path) {
+    // Prepare options for the request, extended from default options
     const options = _.defaultsDeep({
       url: this.config.baseUrl + path
     }, this.defaultRequestOptions);
 
-    /* Briefly log that we are about to perform a GET request */
+    // Briefly log that we are about to perform a GET request
     this.log.info({
       url: options.url
     }, 'Performing GET request');
 
-    /* Perform the GET request */
-    // request.get(options, this._createPaymentRequestCallback(options, callback));
-    request.get(options, (err, httpResponse, body) => {
-      /* Check for error */
-      if (err) {
-        this.log.error({
-          err,
-          requestData: options.json,
-          requestUrl: options.url,
-          responseBody: body
-        }, 'Request error');
-        return callback(constructError('Provider communication error', ERROR_PROVIDER, err));
-      }
-
-      /* Check for non-2xx response */
-      if (httpResponse.statusCode < 200 || httpResponse.statusCode > 299) {
-        const error = constructError(`Expected HTTP status 2xx. Received ${httpResponse.statusCode}`, ERROR_PROVIDER, null);
-        error.statusCode = httpResponse.statusCode;
-        error.requestData = options.json;
-        error.requestUrl = options.url;
-        error.responseBody = body;
-        return callback(error);
-      }
-
-      return callback(null, httpResponse, body);
-    });
+    // Perform the GET request
+    return requestPromise.get(options);
   }
 
   /**
+   * Perform a POST request
    *
    * @param {string} path Path with leading slash
    * @param {object} requestBody Object to send as JSON data
@@ -443,37 +348,35 @@ class ISignThis {
    * Converts a payment object as returned from the iSignThis API into a payment object
    * that is expected as the result of createPayment and getPayment functions.
    *
+   * A response object for a newly created payment looks like this:
+   *
+   * {
+   *   "id": "0d2c106e-94aa-45af-ad01-adfedb26a5e3",
+   *   "uid": "0d2c106e-94aa-45af-ad01-adfedb26a5e3",
+   *   "context_uid": "4f3487be-a61c-4109-b86a-e4c98b566e71",
+   *   "secret": "5f62e2e0-aa10-4349-bdad-c9d13fac3adb",
+   *   "mode": "capture",
+   *   "original_message": {
+   *     "merchant_id": "coinify_sca",
+   *     "transaction_id": "28",
+   *     "reference": " "
+   *   },
+   *   card_reference: {
+   *     card_brand: "MASTERCARD",
+   *     card_token: "cardToken",
+   *     masked_pan: "111111...1111",
+   *     expiry_date: "0721"
+   *   },
+   *   "expires_at": "2016-03-21T14:10:33.596Z",
+   *   "state": "PENDING",
+   *   "compound_state": "PENDING.VALIDATED_TRANSACTION",
+   *   "redirect_url": "https://verify.isignthis.com/landing/0d2c106e-94aa-45af-ad01-adfedb26a5e3"
+   * }
    * @param {object} obj
    * @returns {object}
    * @private
    */
   _convertPaymentObject(obj) {
-    /*
-     * A response object for a newly created payment looks like this:
-     *
-     * {
-     *   "id": "0d2c106e-94aa-45af-ad01-adfedb26a5e3",
-     *   "uid": "0d2c106e-94aa-45af-ad01-adfedb26a5e3",
-     *   "context_uid": "4f3487be-a61c-4109-b86a-e4c98b566e71",
-     *   "secret": "5f62e2e0-aa10-4349-bdad-c9d13fac3adb",
-     *   "mode": "capture",
-     *   "original_message": {
-     *     "merchant_id": "coinify_sca",
-     *     "transaction_id": "28",
-     *     "reference": " "
-     *   },
-     *   card_reference: {
-     *     card_brand: "MASTERCARD",
-     *     card_token: "cardToken",
-     *     masked_pan: "111111...1111",
-     *     expiry_date: "0721"
-     *   },
-     *   "expires_at": "2016-03-21T14:10:33.596Z",
-     *   "state": "PENDING",
-     *   "compound_state": "PENDING.VALIDATED_TRANSACTION",
-     *   "redirect_url": "https://verify.isignthis.com/landing/0d2c106e-94aa-45af-ad01-adfedb26a5e3"
-     * }
-     */
     const convertTransaction = function (tx) {
       return {
         id: tx.bank_id,
@@ -482,9 +385,7 @@ class ISignThis {
       };
     };
 
-    /*
-     * Set state from obj.state parameter
-     */
+    // Set state from obj.state parameter
     let state = this._convertPaymentState(obj.state, obj.compound_state);
     if (!state) {
       this.log.error({state, rawResponse: JSON.stringify(obj)}, 'Unknown payment state');
@@ -584,6 +485,8 @@ class ISignThis {
     return client;
   }
 }
+
+
 
 /**
  * Constructs and returns an Node Error object, attaches a message and a pre-declared error code to it,

@@ -52,76 +52,74 @@ describe('createPayment - INTEGRATION', () => {
     requestStub.restore();
   });
 
-  describe('minimal success request/response', () => {
-    it('correctly sends request and parses response', async () => {
-      const returnUrl = 'https://coinify.com/payment-return';
+  it('should construct, send and parse response', async () => {
+    const returnUrl = 'https://coinify.com/payment-return';
 
-      const createPaymentOptions = {
-        returnUrl,
-        amount: 5000,
-        currency: 'DKK', // 50.00 DKK
+    const createPaymentOptions = {
+      returnUrl,
+      amount: 5000,
+      currency: 'DKK', // 50.00 DKK
+      client: {
+        ip: '127.0.0.1',
+        userAgent: 'Mozilla/5.0 (iPad; U; CPU OS 3_2_1 like Mac OS X; en-us) AppleWebKit/531...'
+      },
+      account: {
+        id: 'accountId'
+      }
+    };
+
+    const payment = await iSignThis.createPayment(createPaymentOptions);
+
+    // Check request data
+    expect(requestStub.calledOnce).to.equal(true);
+    expect(requestStub.firstCall.args[0]).to.containSubset({
+      body: {
+        acquirer_id: 'clearhaus',
+        merchant: {
+          id: merchantId,
+          name: 'node-isignthis-psp',
+          return_url: returnUrl
+        },
+        transaction: {
+          id: '',
+          amount: '50.00',
+          currency: 'DKK',
+          reference: ' '
+        },
         client: {
-          ip: '127.0.0.1',
-          userAgent: 'Mozilla/5.0 (iPad; U; CPU OS 3_2_1 like Mac OS X; en-us) AppleWebKit/531...'
+          ip: createPaymentOptions.client.ip,
+          name: undefined,
+          address: undefined
         },
         account: {
-          id: 'accountId'
-        }
-      };
-
-      const payment = await iSignThis.createPayment(createPaymentOptions);
-
-      // Check request data
-      expect(requestStub.calledOnce).to.equal(true);
-      expect(requestStub.firstCall.args[0]).to.containSubset({
-        body: {
-          acquirer_id: 'clearhaus',
-          merchant: {
-            id: merchantId,
-            name: 'node-isignthis-psp',
-            return_url: returnUrl
-          },
-          transaction: {
-            id: '',
-            amount: '50.00',
-            currency: 'DKK',
-            reference: ' '
-          },
-          client: {
-            ip: createPaymentOptions.client.ip,
-            name: undefined,
-            address: undefined
-          },
-          account: {
-            identifier: createPaymentOptions.account.id,
-            identifier_type: 'ID',
-            full_name: '  '
-          },
-          downstream_auth_type: 'bearer',
-          downstream_auth_value: callbackAuthToken,
-          requested_workflow: 'SCA'
+          identifier: createPaymentOptions.account.id,
+          identifier_type: 'ID',
+          full_name: '  '
         },
-        json: true,
-        url: 'https://gateway.isignthis.com/v1/authorization',
-        headers: {
-          'Content-Type': 'application/json',
-          From: 'api_client',
-          Authorization: 'Bearer auth_token'
-        }
-      });
+        downstream_auth_type: 'bearer',
+        downstream_auth_value: callbackAuthToken,
+        requested_workflow: 'SCA'
+      },
+      json: true,
+      url: 'https://gateway.isignthis.com/v1/authorization',
+      headers: {
+        'Content-Type': 'application/json',
+        From: 'api_client',
+        Authorization: 'Bearer auth_token'
+      }
+    });
 
-      // Check response
-      expect(payment).to.deep.equal({
-        id: successResponse.id,
-        state: 'pending',
-        acquirerId: undefined,
-        expiryTime: undefined,
-        redirectUrl: 'https://stage-verify.isignthis.com/landing/48c72c5b-b618-4ccc-9419-88f17536dde0',
-        transactions: [],
-        kycReviewIncluded: false,
-        card: {},
-        raw: successResponse
-      });
+    // Check response
+    expect(payment).to.deep.equal({
+      id: successResponse.id,
+      state: 'pending',
+      acquirerId: undefined,
+      expiryTime: undefined,
+      redirectUrl: 'https://stage-verify.isignthis.com/landing/48c72c5b-b618-4ccc-9419-88f17536dde0',
+      transactions: [],
+      kycReviewIncluded: false,
+      card: {},
+      raw: successResponse
     });
   });
 });

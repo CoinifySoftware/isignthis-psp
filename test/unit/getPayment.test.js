@@ -1,136 +1,82 @@
-'use strict';
-
-const
-  request = require('request'),
+const chai = require('chai'),
   sinon = require('sinon'),
-  chai = require('chai'),
   chaiSubset = require('chai-subset');
 
 chai.use(chaiSubset);
-chai.should();
+const expect = chai.expect;
 
 const ISignThis = require('../../index.js');
 
-const acquirerId = 'clearhaus';
-const merchantId = 'merchant_id';
-const apiClient = 'api_client';
-const authToken = 'auth_token';
-const callbackAuthToken = 'auth_token';
-
-// Don't log anything during testing
-const log = require('console-log-level')({level: 'fatal'});
-
 describe('getPayment', () => {
-  const transactionId = 'Test';
-  const transactionReference = 'Coinify Card Verification';
 
-  let iSignThis;
-  let requestGetStub;
+  const iSignThis = new ISignThis({
+    merchantId: 'merchantId',
+    apiClient: 'apiClient',
+    authToken: 'authToken',
+    callbackAuthToken: 'callbackAuthToken',
+    acquirerId: 'clearhaus'
+  });
 
-  const successResponse = {
-    id: 'c97f0bfc-c1ac-46c3-96d8-6605a63d380d',
-    uid: 'c97f0bfc-c1ac-46c3-96d8-6605a63d380d',
-    secret: 'f8fd310d-3755-4e63-ae98-ab3629ef245d',
-    mode: 'registration',
-    original_message: {
-      merchant_id: merchantId,
-      transaction_id: transactionId,
-      reference: transactionReference
-    },
-    expires_at: '2016-03-06T13:36:59.196Z',
-    transactions: [
-      {
-        acquirer_id: acquirerId,
-        bank_id: '2774d451-5499-41a6-a37e-6a90f2b8673c',
-        response_code: '20000',
-        success: true,
-        amount: '0.70',
-        currency: 'DKK',
-        message_class: 'authorization-and-capture',
-        status_code: '20000'
+  const getResponse = {response: true};
+  const convertPaymentResponse = {payment: true};
+
+  let createPaymentArgs, getStub, convertPaymentStub;
+
+  beforeEach(() => {
+    createPaymentArgs = {
+      returnUrl: 'www.return.com',
+      amount: 10000,
+      currency: 'EUR',
+      transaction: {
+        id: 'tx-id',
+        reference: 'CY_1234'
       },
-      {
-        acquirer_id: acquirerId,
-        bank_id: '73f63c0b-7c59-416f-89e5-17dcc38b64ac',
-        response_code: '20000',
-        success: true,
-        amount: '0.30',
-        currency: 'DKK',
-        message_class: 'authorization-and-capture',
-        status_code: '20000'
+      client: {
+        ip: '127.0.0.1',
+        name: 'Hans Zimmer',
+        dob: '1990-01-30',
+        country: 'Denmark',
+        email: 'test@email.com',
+        address: 'address1'
+      },
+      account: {
+        id: 't_12345',
+        secret: 'secret123',
+        name: 'Hans Zimmer'
       }
-    ],
-    state: 'PENDING',
-    compound_state: 'PENDING.AWAIT_SECRET',
-    card_reference: {
-      card_brand: 'MASTERCARD',
-      card_token: 'cardToken',
-      masked_pan: '123456...9876',
-      expiry_date: '0721'
-    }
-  };
+    };
 
-  beforeEach((done) => {
-    iSignThis = new ISignThis({
-      acquirerId,
-      merchantId,
-      apiClient,
-      authToken,
-      callbackAuthToken,
-      log
-    });
-
-    requestGetStub = sinon.stub(request, 'get').yields(null, {}, JSON.stringify(successResponse));
-    done();
+    getStub = sinon.stub(iSignThis, '_get')
+      .resolves(getResponse);
+    convertPaymentStub = sinon.stub(iSignThis, '_convertPaymentObject')
+      .returns(convertPaymentResponse);
   });
 
-  afterEach((done) => {
-    requestGetStub.restore();
-    done();
+  afterEach(() => {
+    getStub.restore();
+    convertPaymentStub.restore();
   });
 
-  describe('success', () => {
-    it('correctly sends request and parses response', (done) => {
-      requestGetStub.yields(null, {statusCode: 200}, JSON.stringify(successResponse));
+  it('should get payment when id is provided', async () => {
+    const paymentId = 'tx-id';
+    const payment = await iSignThis.getPayment(paymentId);
+    expect(payment).to.deep.equal(convertPaymentResponse);
 
-      iSignThis.getPayment(successResponse.id, (err, payment) => {
-        if (err) {
-          return done(err);
-        }
-
-        /* Check request data */
-        request.get.calledOnce.should.equal(true);
-        request.get.firstCall.args[0].url.should.equal(`https://gateway.isignthis.com/v1/authorization/${successResponse.id}`);
-
-        /* Briefly check payment object. See test for _convertPaymentObject() for full coverage */
-        payment.id.should.equal(successResponse.id);
-        payment.should.have.property('card');
-        payment.card.should.deep.equal({
-          brand: 'MASTERCARD',
-          token: 'cardToken',
-          bin: '123456',
-          last4: '9876',
-          expiryDate: '0721'
-        });
-
-        done();
-      });
-    });
+    expect(getStub.calledOnce).to.equal(true);
+    const [requestUrl] = getStub.firstCall.args;
+    expect(requestUrl).to.equal(`/v1/authorization/${paymentId}`);
+    expect(convertPaymentStub.calledOnce).to.equal(true);
+    expect(convertPaymentStub.firstCall.args[0]).to.deep.equal(getResponse);
   });
 
-  describe('failure', () => {
-    it('returns an error when payment could not be found', (done) => {
-      requestGetStub.yields(null, {statusCode: 404}, {some: 'body'});
-
-      iSignThis.getPayment(123456, (err, payment) => {
-        err.should.be.an('Error');
-        err.code.should.equal('provider_error');
-        err.statusCode.should.equal(404);
-
-        (typeof payment === 'undefined').should.equal(true);
-
-        done();
-      });
-    });
+  it('should get payment when object with raw.id is provided', async () => {
+    const paymentObject = {
+      raw: {
+        id: 'tx-id'
+      }
+    };
+    const payment = await iSignThis.getPayment(paymentObject);
+    const [requestUrl] = getStub.firstCall.args;
+    expect(requestUrl).to.equal(`/v1/authorization/${paymentObject.raw.id}`);
   });
 });

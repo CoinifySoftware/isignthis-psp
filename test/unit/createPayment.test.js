@@ -7,7 +7,7 @@ const expect = chai.expect;
 
 const ISignThis = require('../../index.js');
 
-describe('createPayment - UNIT', () => {
+describe('createPayment', () => {
 
   const iSignThis = new ISignThis({
     merchantId: 'merchantId',
@@ -49,7 +49,7 @@ describe('createPayment - UNIT', () => {
     postStub = sinon.stub(iSignThis, '_post')
       .resolves(postResponse);
     convertPaymentStub = sinon.stub(iSignThis, '_convertPaymentObject')
-      .resolves(convertPaymentResponse);
+      .returns(convertPaymentResponse);
   });
 
   afterEach(() => {
