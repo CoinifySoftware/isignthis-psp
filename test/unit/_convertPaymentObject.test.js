@@ -84,6 +84,29 @@ describe('_convertPaymentObject', () => {
     });
   });
 
+  it('should return card details when provided', () => {
+    responseObject = _.defaultsDeep({
+      card_reference: {
+        masked_pan: '550000...0004',
+        card_token: 'f7fb955_15fc0a831d7__7fa8',
+        card_brand: 'MASTERCARD',
+        expiry_date: '1217',
+        recurring_id: 'f7fb955_15fc0a831d7__7fa7'
+      }
+    }, responseObject);
+
+    const payment = iSignThis._convertPaymentObject(responseObject);
+
+    expect(payment.card).to.deep.equal({
+      token: 'f7fb955_15fc0a831d7__7fa8',
+      brand: 'MASTERCARD',
+      expiryDate: '1217',
+      bin: '550000',
+      last4: '0004',
+      recurringId: 'f7fb955_15fc0a831d7__7fa7'
+    });
+  });
+
   it('should return kycReviewIncluded true if workflow_state is not NA', () => {
     responseObject = _.defaultsDeep({
       workflow_state: {

@@ -447,6 +447,7 @@ class ISignThis {
       const cardNumber = obj.card_reference.masked_pan;
       card.bin = cardNumber.substring(0, 6);
       card.last4 = cardNumber.substring(cardNumber.length - 4);
+      card.recurringId = obj.card_reference.recurring_id;
     }
 
     return {
