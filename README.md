@@ -74,7 +74,7 @@ Field         | Type      | Description
 
 _Initiate a payment_
 
-`createPayment(options, callback)`
+`createPayment(options)`
 
 #### `options` arguments
 
@@ -104,9 +104,9 @@ Argument      | Type   | Default    | Description
 &rarr;`token`   | String  | `null`   | The credit card token to use for a preauthorized card payment
 
 
-#### Callback result
+#### Returns
 
-The callback returns a [payment object](#module-payment-object).
+The function return a Promise which resolves in a [payment object](#module-payment-object).
 
 #### Example
 
@@ -125,13 +125,13 @@ var options = {
   }
 };
 
-PSP.createPayment(options, function(err, payment) {
-  if (err) {
+return PSP.createPayment(options)
+  .then(payment => {
+    // Handle payment creation success
+  })
+  .catch(err => {
     // Handle error
-    return;
-  }
-
-  // Handle payment creation success
+  });
 });
 ```
 
@@ -140,7 +140,7 @@ PSP.createPayment(options, function(err, payment) {
 
 _Get updated information about an existing payment_
 
-`getPayment(paymentId, callback);`
+`getPayment(paymentId);`
 
 #### Arguments
 
@@ -148,30 +148,30 @@ Argument      | Type   | Default    | Description
 ------------- | ------ | ---------- | -----------
 `paymentId`   | String | _Required_ | ID of payment to query. Comes from the `id` property of the [payment object](#module-payment-object).
 
-#### Callback result
+#### Returns
 
-The callback returns a [payment object](#module-payment-object).
+The function return a Promise which resolves in a [payment object](#module-payment-object).
 
 #### Example
 
 ```javascript
 var paymentId = '12345678-4321-2345-6543-456787656789';
-PSP.getPayment(paymentId, function(err, payment) {
-  if (err) {
+return PSP.getPayment(options)
+  .then(payment => {
+    // Handle payment creation success
+  })
+  .catch(err => {
     // Handle error
-    return;
-  }
-
-  // Handle retrieved payment
+  });
 });
 ```
 
-### `validateCallback`: Validate callback
+### `isCallbackValid`: Validate callback
 <a name="module–callback-validate"></a>
 
 _Validate a callback sent from iSignThis._
 
-`validateCallback(request, callback);`
+`isCallbackValid(request);`
 
 #### Arguments
 
@@ -179,19 +179,14 @@ Argument      | Type   | Default    | Description
 ------------- | ------ | ---------- | -----------
 `request`     | Object | _Required_ | Whole request object with headers and body.
 
-#### Callback result
+#### Returns
 
-Callback can result in a result or error. If the signature or the callback is invalid we return a result object with `success: false` if callback is valid we return a result object with `success: true`. If some other error occurs we return an error object.
-
-Field         | Type      | Description
-------------- | --------- | -----------
-`success`      | Bolean    | True if callback is validated, false otherwise
-`message`     | String    | Message describing the result (_Signature is invalid_)
+Returns true if callback is valid
 
 #### Example
 
 ```javascript
-var request = {
+const request = {
   headers: {
   	 'content-type': 'application/json',
 	  accept: 'application/json',
@@ -202,14 +197,9 @@ var request = {
   },
   body: {}
 };
-PSP.validateCallback(request, function(err, resultObject) {
-  if (err) {
-    // Handle error
-    return;
-  }
 
-  // Handle retrieved resultObject
-});
+// Result is either true or false
+const result = isCallbackValid(request);
 ```
 
 ### `parsePayment`: Read payment
@@ -232,7 +222,7 @@ This function returns a [payment object](#module-payment-object).
 #### Example
 
 ```javascript
-var requestBody = {
+const requestBody = {
   id: "c97f0bfc-c1ac-46c3-96d8-6605a63d380d",
   uid: "c97f0bfc-c1ac-46c3-96d8-6605a63d380d",
   secret: "f8fd310d-3755-4e63-ae98-ab3629ef245d",
@@ -270,5 +260,5 @@ var requestBody = {
 }
 
 // result is a payment object
-var payment = PSP.parsePayment(requestBody);
+const payment = PSP.parsePayment(requestBody);
 ```
