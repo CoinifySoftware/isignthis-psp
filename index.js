@@ -71,7 +71,24 @@ class ISignThis {
   /**
    * Process a recurring payment using a recurringId in the request
    *
-   * @param {object} options
+   * @param {object} processArgs
+   * @param {string} processArgs.recurringId ID used to process this recurring payment
+   * @param {string} processArgs.returnUrl URL to redirect to after a successful payment.
+   * @param {object} processArgs.client
+   * @param {string} processArgs.client.ip IP of the end-user
+   * @param {string} processArgs.client.name (optional) Name of the end-user
+   * @param {string} processArgs.client.address (optional) Address of the end-user
+   * @param {string} processArgs.client.dob (optional) Date of birth of the end-user YYYY-MM-DD.
+   * @param {string} processArgs.client.country (optional) Country of the end-user
+   * @param {string} processArgs.client.email (optional) Email of the end-user
+   * @param {object} processArgs.account
+   * @param {string} processArgs.account.id Unique identifier for this account (e.g. internal user ID or equivalent)
+   * @param {string} processArgs.account.secret (optional) Secret used by iSignThis
+   * @param {string} processArgs.account.name (optional) Full name of account owner
+   * @param {object} processArgs.transaction
+   * @param {object} processArgs.transaction.id (optional) ID of the internal payment
+   * @param {object} processArgs.transaction.reference (optional) Another internal reference
+   *
    * @returns {Promise<payment>} Resolves in a payment object
    */
   async processRecurringPayment(processArgs) {
@@ -97,6 +114,24 @@ class ISignThis {
    * Creates a new payment with iSignThis.
    *
    * @param {object} createArgs Create arguments
+   * @param {object} createArgs.amount Amount in sub-units
+   * @param {object} createArgs.currency Currency of the amount
+   * @param {string} createArgs.returnUrl URL to redirect to after a successful payment.
+   * @param {object} createArgs.client
+   * @param {string} createArgs.client.ip IP of the end-user
+   * @param {string} createArgs.client.name (optional) Name of the end-user
+   * @param {string} createArgs.client.address (optional) Address of the end-user
+   * @param {string} createArgs.client.dob (optional) Date of birth of the end-user YYYY-MM-DD.
+   * @param {string} createArgs.client.country (optional) Country of the end-user
+   * @param {string} createArgs.client.email (optional) Email of the end-user
+   * @param {object} createArgs.account
+   * @param {string} createArgs.account.id Unique identifier for this account (e.g. internal user ID or equivalent)
+   * @param {string} createArgs.account.secret (optional) Secret used by iSignThis
+   * @param {string} createArgs.account.name (optional) Full name of account owner
+   * @param {object} createArgs.transaction
+   * @param {object} createArgs.transaction.id (optional) ID of the internal payment
+   * @param {object} createArgs.transaction.reference  (optional) Another internal reference
+   *
    * @returns {Promise<payment>} Resolves in a payment object
    */
   async createPayment(createArgs) {
@@ -278,8 +313,8 @@ class ISignThis {
     // Default value is a string with a space in it (iSignThis won't accept empty string here, so we add a space)
     const transactionReference = args.transaction && args.transaction.reference || ' ';
     // Construct account and client object
-    const account = this._createPaymentSanitizeAccountObject(args.account);
-    const client = this._createPaymentSanitizeClientObject(args.client);
+    const account = ISignThis._createPaymentSanitizeAccountObject(args.account);
+    const client = ISignThis._createPaymentSanitizeClientObject(args.client);
 
     return {
       client, account,
@@ -309,7 +344,7 @@ class ISignThis {
    * @returns {string|null}
    * @private
    */
-  _convertPaymentState(state, compoundState) {
+  static _convertPaymentState(state, compoundState) {
     state = state.toLowerCase();
     compoundState = compoundState && compoundState.toLowerCase();
 
@@ -414,7 +449,7 @@ class ISignThis {
     };
 
     // Set state from obj.state parameter
-    let state = this._convertPaymentState(obj.state, obj.compound_state);
+    let state = ISignThis._convertPaymentState(obj.state, obj.compound_state);
     if (!state) {
       this.log.error({state, rawResponse: JSON.stringify(obj)}, 'Unknown payment state');
     }
@@ -473,7 +508,7 @@ class ISignThis {
    * @returns {object} Sanitized object, ready to POST to iSignThis
    * @private
    */
-  _createPaymentSanitizeAccountObject(args) {
+  static _createPaymentSanitizeAccountObject(args) {
     const account = _.pick(args, ['id', 'secret', 'name']);
 
     /*
@@ -504,7 +539,7 @@ class ISignThis {
    * @returns {object} Sanitized object, ready to POST to iSignThis
    * @private
    */
-  _createPaymentSanitizeClientObject(args) {
+  static _createPaymentSanitizeClientObject(args) {
     const client = _.pick(args, ['ip', 'name', 'dob', 'country', 'email', 'address']);
 
     // Transform name to empty string if null

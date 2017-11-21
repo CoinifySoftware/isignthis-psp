@@ -89,7 +89,6 @@ Argument      | Type   | Default    | Description
 `client`     | Object  | _Required_ | Object with information about the client initiating the payment. Only the `ip` field is required.
 `initRecurring` | Boolean  | _(Optional)_  | If payment is the first in a series of recurring payments.
 &rarr;`ip`   | String  | _Required_ | IP address of client
-&rarr;`userAgent`  | String  | _Required_ | Client user agent
 &rarr;`name` | String  | `null`     | Full name of client
 &rarr;`dob`  | String   | `null`     | Date of birth of client
 &rarr;`country`  | String  | `null`     | Country code (ISO-3166-1 alpha-2) of country of citizenship of client
@@ -102,8 +101,6 @@ Argument      | Type   | Default    | Description
 `transaction`   | Object  | `{}`       | Information about the transaction(s) related to the payment
 &rarr;`id`      | String  | `null`     | ???
 &rarr;`reference` | String  | `null`   | Internal reference for the transaction(s)
-`card`          | Object  | _(Optional) | Information about the card
-&rarr;`token`   | String  | `null`   | The credit card token to use for a preauthorized card payment
 
 
 #### Returns
