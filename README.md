@@ -99,7 +99,7 @@ Argument      | Type   | Default    | Description
 &rarr;`secret`  | String  | `null`     | Secret used by iSignThis
 &rarr;`name`    | String  | `null`     | Full name of account owner
 `transaction`   | Object  | `{}`       | Information about the transaction(s) related to the payment
-&rarr;`id`      | String  | `null`     | ???
+&rarr;`id`      | String  | `null`     | Internal reference
 &rarr;`reference` | String  | `null`   | Internal reference for the transaction(s)
 
 
@@ -125,6 +125,64 @@ var options = {
 };
 
 return PSP.createPayment(options)
+  .then(payment => {
+    // Handle payment creation success
+  })
+  .catch(err => {
+    // Handle error
+  });
+});
+```
+
+### `processRecurringPayment`: Process recurring payment
+<a name="module–payment-create"></a>
+
+_Process a recurring payment using a recurringId from a succeded payment with initRecurring: true_
+
+`processRecurringPayment(options)`
+
+#### `options` arguments
+
+Argument      | Type   | Default    | Description
+------------- | ------ | ---------- | -----------
+`acquirerId`  | String | `acquirerId` from constructor | What acquirer should be used for this payment?
+`recurringId` | String  | _Required_  | If payment is the first in a series of recurring payments. `https://example.com/payment-complete?transaction_id=`
+`client`     | Object  | _Required_ | Object with information about the client initiating the payment. Only the `ip` field is required.
+&rarr;`ip`   | String  | _Required_ | IP address of client
+&rarr;`name` | String  | `null`     | Full name of client
+&rarr;`dob`  | String   | `null`     | Date of birth of client
+&rarr;`country`  | String  | `null`     | Country code (ISO-3166-1 alpha-2) of country of citizenship of client
+&rarr;`email`   | String (Email address) | `null`     | Email address of client
+&rarr;`address` | String  | `null`     | Physical street address of client
+`account`       | Object  | _Required_ | Object with information about the account (e.g. the internal user or equivalent)
+&rarr;`id`      | String  | _Required_ | Unique identifier for this account (e.g. internal user ID or equivalent)
+&rarr;`secret`  | String  | `null`     | Secret used by iSignThis
+&rarr;`name`    | String  | `null`     | Full name of account owner
+`transaction`   | Object  | `{}`       | Information about the transaction(s) related to the payment
+&rarr;`id`      | String  | `null`     | Internal reference
+&rarr;`reference` | String  | `null`   | Internal reference for the transaction(s)
+
+
+#### Returns
+
+The function return a Promise which resolves in a [payment object](#module-payment-object).
+
+#### Example
+
+```javascript
+const options = {
+  acquirerId: 'clearhaus',
+  recurringId: 'recurring-id-string',
+  client: {
+    ip: '127.0.0.1',
+    userAgent: 'Mozilla/5.0 (iPad; U; CPU OS 3_2_1 like Mac OS X; en-us) AppleWebKit/531...'
+  },
+  account: {
+    id: 'user-12345'
+  }
+};
+
+return PSP.processRecurringPayment(options)
   .then(payment => {
     // Handle payment creation success
   })

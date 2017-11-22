@@ -254,6 +254,7 @@ class ISignThis {
   _get(path) {
     // Prepare options for the request, extended from default options
     const options = _.defaultsDeep({
+      json: true,
       url: this.config.baseUrl + path
     }, this.defaultRequestOptions);
 
