@@ -195,7 +195,7 @@ class ISignThis {
       throw constructError('Payment Id not provided', ERROR_MODULE, null);
     }
 
-    const requestPath = `${AUTHORIZATION_PATH}/${paymentId}/cancel`;
+    const requestPath = `/v1/transaction/${paymentId}/cancel`;
 
     try {
       const response = await this._post(requestPath, {});
