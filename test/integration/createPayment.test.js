@@ -53,6 +53,7 @@ describe('createPayment - INTEGRATION', () => {
     const returnUrl = 'https://coinify.com/payment-return';
 
     const createPaymentOptions = {
+      workflow: 'CORE',
       returnUrl,
       amount: 5000,
       currency: 'DKK', // 50.00 DKK
@@ -71,6 +72,7 @@ describe('createPayment - INTEGRATION', () => {
     expect(requestStub.calledOnce).to.equal(true);
     expect(requestStub.firstCall.args[0]).to.containSubset({
       body: {
+        workflow: 'CORE',
         acquirer_id: 'clearhaus',
         merchant: {
           id: merchantId,
