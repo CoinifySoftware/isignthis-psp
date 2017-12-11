@@ -45,7 +45,7 @@ describe('_constructPaymentRequestBody', () => {
     };
   });
 
-  it('shpuld throw error if workflow is missing', () => {
+  it('should throw error if workflow is missing', () => {
     delete createPaymentArgs.workflow;
     expect(() => iSignThis._constructPaymentRequestBody(createPaymentArgs))
       .to.throw('Insufficient arguments to createPayment');
