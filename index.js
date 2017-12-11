@@ -195,7 +195,7 @@ class ISignThis {
       throw constructError('Payment Id not provided', ERROR_MODULE, null);
     }
 
-    const requestPath = `${AUTHORIZATION_PATH}/${paymentId}/cancel`;
+    const requestPath = `/v1/transaction/${paymentId}/cancel`;
 
     try {
       const response = await this._post(requestPath, {});
@@ -303,7 +303,7 @@ class ISignThis {
   _constructPaymentRequestBody(args) {
     // Check for required arguments
     if (!args.returnUrl || !args.client || !args.client.ip ||
-      !args.account || !args.account.id) {
+      !args.account || !args.account.id || !args.workflow) {
       throw new RangeError('Insufficient arguments to createPayment');
     }
 
@@ -319,6 +319,7 @@ class ISignThis {
 
     return {
       client, account,
+      workflow: args.workflow,
       acquirer_id: acquirerId,
       merchant: {
         id: args.merchantId || this.config.merchantId, // our merchant at IST

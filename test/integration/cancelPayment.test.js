@@ -48,7 +48,7 @@ describe('cancelPayment - INTEGRATION', () => {
 
     // Check request data
     expect(requestPostStub.calledOnce).to.equal(true);
-    expect(requestPostStub.firstCall.args[0].url).to.equal(`https://gateway.isignthis.com/v1/authorization/${transactionId}/cancel`);
+    expect(requestPostStub.firstCall.args[0].url).to.equal(`https://gateway.isignthis.com/v1/transaction/${transactionId}/cancel`);
   });
 
   it('returns an "invalid_state" error when payment cannot be cancelled', () => {

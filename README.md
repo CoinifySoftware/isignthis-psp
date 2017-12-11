@@ -82,6 +82,7 @@ _Initiate a payment_
 
 Argument      | Type   | Default    | Description
 ------------- | ------ | ---------- | -----------
+`workflow`    | String | _Required_ | Workflow identifier given by iSignThis.  
 `acquirerId`  | String | `acquirerId` from constructor | What acquirer should be used for this payment?
 `returnUrl`   | String (URL fragment) | _Required_ | URL to redirect end-user to after a successful payment. **Note**: The PSP transaction ID will be appended to the URL, so it should be something like `https://example.com/payment-complete?transaction_id=`
 `amount`     | Integer | _Required_ | Amount (denominated in sub-unit of `currency`) to create a payment for.
@@ -111,6 +112,7 @@ The function return a Promise which resolves in a [payment object](#module-payme
 
 ```javascript
 var options = {
+  workflow: 'CORE',
   acquirerId: 'clearhaus',
   returnUrl: 'https://example.com/payment-complete?transaction_id=',
   amount: 5000,
@@ -145,6 +147,7 @@ _Process a recurring payment using a recurringId from a succeded payment with in
 
 Argument      | Type   | Default    | Description
 ------------- | ------ | ---------- | -----------
+`workflow`    | String | _Required_ | Workflow identifier given by iSignThis.  
 `acquirerId`  | String | `acquirerId` from constructor | What acquirer should be used for this payment?
 `recurringId` | String  | _Required_  | If payment is the first in a series of recurring payments. `https://example.com/payment-complete?transaction_id=`
 `client`     | Object  | _Required_ | Object with information about the client initiating the payment. Only the `ip` field is required.

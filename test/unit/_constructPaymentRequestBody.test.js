@@ -21,6 +21,7 @@ describe('_constructPaymentRequestBody', () => {
 
   beforeEach(() => {
     createPaymentArgs = {
+      workflow: 'CORE',
       returnUrl: 'www.return.com',
       amount: 10000,
       currency: 'EUR',
@@ -44,6 +45,12 @@ describe('_constructPaymentRequestBody', () => {
     };
   });
 
+  it('should throw error if workflow is missing', () => {
+    delete createPaymentArgs.workflow;
+    expect(() => iSignThis._constructPaymentRequestBody(createPaymentArgs))
+      .to.throw('Insufficient arguments to createPayment');
+  });
+
   it('should throw error if client.ip is missing', () => {
     delete createPaymentArgs.client.ip;
     expect(() => iSignThis._constructPaymentRequestBody(createPaymentArgs))
@@ -53,6 +60,7 @@ describe('_constructPaymentRequestBody', () => {
   it('should construct request body and call post with all params', () => {
     const requestBody = iSignThis._constructPaymentRequestBody(createPaymentArgs);
     expect(requestBody).to.containSubset({
+      workflow: 'CORE',
       acquirer_id: 'clearhaus',
       merchant: {
         id: 'merchantId',
@@ -86,6 +94,7 @@ describe('_constructPaymentRequestBody', () => {
 
   it('should construct request body and call post with minimum required params', async () => {
     createPaymentArgs = {
+      workflow: 'CORE',
       returnUrl: 'www.return.com',
       amount: 10000,
       currency: 'EUR',

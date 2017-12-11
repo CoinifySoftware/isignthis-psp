@@ -16,7 +16,7 @@ const callbackAuthToken = 'callback_auth_token';
 // Don't log anything during testing
 const log = require('console-log-level')({level: 'fatal'});
 
-describe('createPayment - INTEGRATION', () => {
+describe('processRecurringPayment - INTEGRATION', () => {
   const iSignThis = new ISignThis({
     acquirerId, merchantId, apiClient,
     authToken, callbackAuthToken, log
@@ -53,6 +53,7 @@ describe('createPayment - INTEGRATION', () => {
     const returnUrl = 'https://coinify.com/payment-return';
 
     const processArgs = {
+      workflow: 'CORE',
       returnUrl,
       recurringId: 'recurring-id',
       transaction: {
