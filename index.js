@@ -283,11 +283,14 @@ class ISignThis {
       url: this.config.baseUrl + path
     }, this.defaultRequestOptions);
 
+    // remove secrets from the body for logging
+    const bodyToLog = _.omit(requestBody, ['account.secret', 'downstream_auth_value']);
+
     // Briefly log that we are about to perform a POST request
     this.log.info({
       url: options.url,
       request: {
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(bodyToLog)
       }
     }, 'Performing POST request');
 
