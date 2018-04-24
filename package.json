@@ -1,6 +1,6 @@
 {
   "name": "isignthis-psp",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Module for interfacing with iSignThis as a payment service provider (PSP)",
   "main": "index.js",
   "dependencies": {
