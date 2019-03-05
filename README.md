@@ -53,6 +53,7 @@ Field         | Type      | Description
 `id`          | String    | PSP-specific identifier for this payment
 `acquirerId`  | String    | Acquirer used for this payment? (`options.acquirerId` as passed to the _constructor_)
 `state`       | String    | State of the payment. Is one of the following strings: <ul><li>`pending` - Payment has been initiated, but is waiting for action from the PSP or the end-user.</li><li>`rejected` - Payment was rejected before the end-user entered any payment details.</li><li>`declined` - Payment was declined after the end-user entered payment details.</li><li>`failed` - Payment failed due to an error with the PSP.</li><li>`expired` - Payment expired before it was completed.</li><li>`completed` - Payment completed successfully.</li></ul>
+`event`       | String    |  The event field describes an event, a system action that has been triggered either automatically or by an operator. 
 `expiryTime` | Date | Time when payment expires in ISO-8601 format
 `redirectUrl` | String | URL where the payment is processed by the user.
 `transactions` | Object    | Information about the transaction(s) related to the payment

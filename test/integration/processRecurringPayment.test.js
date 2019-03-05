@@ -35,6 +35,7 @@ describe('processRecurringPayment - INTEGRATION', () => {
     },
     transactions: [],
     state: 'PENDING',
+    event: 'transaction_accepted',
     compound_state: 'PENDING.VALIDATED_TRANSACTION',
     redirect_url: 'https://stage-verify.isignthis.com/landing/48c72c5b-b618-4ccc-9419-88f17536dde0'
   };
@@ -112,6 +113,7 @@ describe('processRecurringPayment - INTEGRATION', () => {
     expect(payment).to.deep.equal({
       id: successResponse.id,
       state: 'pending',
+      event: 'transaction_accepted',
       acquirerId: undefined,
       expiryTime: undefined,
       redirectUrl: 'https://stage-verify.isignthis.com/landing/48c72c5b-b618-4ccc-9419-88f17536dde0',
