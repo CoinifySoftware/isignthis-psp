@@ -497,6 +497,7 @@ class ISignThis {
       id: obj.id,
       acquirerId: obj.transactions && obj.transactions[0] && obj.transactions[0].acquirer_id,
       state,
+      event: obj.event,
       expiryTime: obj.expires_at,
       redirectUrl: obj.redirect_url,
       transactions: obj.transactions ? obj.transactions.map(convertTransaction) : undefined,

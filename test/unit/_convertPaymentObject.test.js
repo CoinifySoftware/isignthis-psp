@@ -50,6 +50,7 @@ describe('_convertPaymentObject', () => {
         }
       ],
       state: 'PENDING',
+      event: 'transaction_accepted',
       compound_state: 'PENDING.AWAIT_SECRET'
     };
   });
@@ -64,6 +65,7 @@ describe('_convertPaymentObject', () => {
       id: 'c97f0bfc-c1ac-46c3-96d8-6605a63d380d',
       acquirerId: 'clearhaus',
       state: 'pending',
+      event: 'transaction_accepted',
       expiryTime: '2016-03-06T13:36:59.196Z',
       redirectUrl: undefined,
       transactions: [
