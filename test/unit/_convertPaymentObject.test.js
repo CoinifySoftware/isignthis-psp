@@ -191,6 +191,14 @@ describe('_convertPaymentObject', () => {
     expect(payment.state).to.equal('rejected');
   });
 
+  it('should parse payment with state card_expired', () => {
+    responseObject.state = 'CARD_EXPIRED';
+
+    const payment = iSignThis._convertPaymentObject(responseObject);
+
+    expect(payment.state).to.equal('rejected');
+  });
+
   it('should parse payment with state preflight', () => {
     responseObject.state = 'PREFLIGHT';
 
