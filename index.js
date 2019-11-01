@@ -372,6 +372,7 @@ class ISignThis {
       case 'success':
         paymentState = STATE_COMPLETED;
         break;
+      case 'card_expired':
       case 'declined':
         paymentState = STATE_REJECTED;
         break;
